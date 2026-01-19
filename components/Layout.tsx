@@ -8,9 +8,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="bg-black text-white p-1 px-4 font-black text-2xl skew-x-[-12deg] border-2 border-black">
-              MANGA
+              SEVEN
             </div>
-            <span className="manga-font text-3xl tracking-tighter uppercase italic">Bubble Pro</span>
+            <span className="manga-font text-3xl tracking-tighter uppercase italic">Mangá</span>
           </div>
           <div className="hidden md:flex gap-8 text-[11px] font-black tracking-[0.2em] uppercase">
             <a href="#" className="border-b-2 border-transparent hover:border-black transition-all">Editor</a>
@@ -24,7 +24,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </main>
       <footer className="bg-black text-white p-8 mt-12 border-t-8 border-gray-900">
         <div className="container mx-auto text-center font-black text-[10px] tracking-widest uppercase">
-          <p>© 2024 MANGA BUBBLE PRO - MONOCHROME INTERFACE - POWERED BY GEMINI AI</p>
+          <p>© 2024 SEVEN MANGÁ - MONOCHROME INTERFACE - POWERED BY GEMINI AI</p>
         </div>
       </footer>
     </div>

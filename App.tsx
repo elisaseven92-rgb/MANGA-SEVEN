@@ -111,7 +111,7 @@ export default function App() {
         pixelRatio: 3
       });
       const link = document.createElement('a');
-      link.download = `manga-final-${Date.now()}.png`;
+      link.download = `seven-manga-final-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
