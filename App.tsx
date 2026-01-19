@@ -67,6 +67,7 @@ export default function App() {
       tailAngle: 150,
       tailLength: 60,
       fontSize: 18,
+      bubbleScale: 35,
       readingOrder: generation.suggestions.length + 1
     };
     setGeneration(prev => ({
@@ -169,15 +170,27 @@ export default function App() {
                     <div className="space-y-1">
                       <div className="flex justify-between items-center">
                         <span className="text-[9px] font-black bg-black text-white px-2 py-0.5 italic">CAMADA #{idx + 1}</span>
-                        <div className="flex items-center gap-2">
-                           <i className="fa-solid fa-text-height text-[10px]"></i>
-                           <input 
-                              type="range" 
-                              min="10" max="40" 
-                              value={s.fontSize || 16} 
-                              onChange={(e) => handleUpdateSuggestion(idx, 'fontSize', parseInt(e.target.value))}
-                              className="w-20 accent-black h-1 bg-gray-200 appearance-none border border-black"
-                           />
+                        <div className="flex items-center gap-4">
+                           <div className="flex items-center gap-2">
+                             <i className="fa-solid fa-text-height text-[10px]"></i>
+                             <input 
+                                type="range" 
+                                min="10" max="40" 
+                                value={s.fontSize || 16} 
+                                onChange={(e) => handleUpdateSuggestion(idx, 'fontSize', parseInt(e.target.value))}
+                                className="w-16 accent-black h-1 bg-gray-200 appearance-none border border-black"
+                             />
+                           </div>
+                           <div className="flex items-center gap-2">
+                             <i className="fa-solid fa-up-right-and-down-left-from-center text-[10px]"></i>
+                             <input 
+                                type="range" 
+                                min="10" max="80" 
+                                value={s.bubbleScale || 35} 
+                                onChange={(e) => handleUpdateSuggestion(idx, 'bubbleScale', parseInt(e.target.value))}
+                                className="w-16 accent-black h-1 bg-gray-200 appearance-none border border-black"
+                             />
+                           </div>
                         </div>
                       </div>
                       <textarea
@@ -259,12 +272,18 @@ export default function App() {
                     const rad = (s.tailAngle - 90) * (Math.PI / 180);
                     const cosA = Math.cos(rad);
                     const sinA = Math.sin(rad);
+                    const currentScale = s.bubbleScale || 35;
                     
                     return (
                       <div 
                         key={idx}
                         className="absolute transform -translate-x-1/2 -translate-y-1/2"
-                        style={{ left: `${s.position.x}%`, top: `${s.position.y}%`, width: '35%', zIndex: 100 + idx }}
+                        style={{ 
+                          left: `${s.position.x}%`, 
+                          top: `${s.position.y}%`, 
+                          width: `${currentScale}%`, 
+                          zIndex: 100 + idx 
+                        }}
                       >
                         <div className="relative bg-white border-[4px] border-black rounded-[50%] px-8 py-10 shadow-2xl flex items-center justify-center min-h-[100px] pointer-events-auto">
                           <p 

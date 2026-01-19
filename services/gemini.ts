@@ -39,6 +39,7 @@ export async function analyzeMangaPage(
             - tailAngle: Ângulo (0-360) para o rabicho. Se for narração, aponte para o centro do quadro.
             - tailLength: Comprimento do rabicho (40-100).
             - fontSize: Tamanho sugerido (12-20).
+            - bubbleScale: Largura sugerida do balão (20-60).
             - readingOrder: Ordem sequencial de leitura.`,
           },
         ],
@@ -64,9 +65,10 @@ export async function analyzeMangaPage(
               tailAngle: { type: Type.NUMBER },
               tailLength: { type: Type.NUMBER },
               fontSize: { type: Type.INTEGER },
+              bubbleScale: { type: Type.NUMBER },
               readingOrder: { type: Type.INTEGER }
             },
-            required: ["panelNumber", "description", "suggestedDialogue", "position", "tailAngle", "tailLength", "fontSize", "readingOrder"],
+            required: ["panelNumber", "description", "suggestedDialogue", "position", "tailAngle", "tailLength", "fontSize", "bubbleScale", "readingOrder"],
           },
         },
       },

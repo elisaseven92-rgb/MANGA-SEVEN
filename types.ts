@@ -17,6 +17,7 @@ export interface SceneSuggestion {
   tailAngle: number; // 0-360
   tailLength: number; // Comprimento do rabicho
   fontSize: number; // Tamanho da fonte em px
+  bubbleScale: number; // Escala/Largura do balão em % (ex: 20-60)
   readingOrder: number;
 }
 
