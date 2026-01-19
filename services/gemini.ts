@@ -1,12 +1,12 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export async function analyzeMangaPage(
   base64Image: string,
   mimeType: string
 ): Promise<any[]> {
+  // Criar a instância aqui garante que a API_KEY injetada pelo Vite esteja disponível
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const base64Data = base64Image.split(',')[1] || base64Image;
 
   try {
