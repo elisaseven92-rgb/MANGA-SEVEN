@@ -134,15 +134,20 @@ export default function App() {
     const base = "relative bg-white flex items-center justify-center min-h-[80px] pointer-events-auto border-black transition-all";
     switch (s.bubbleType) {
       case 'scream':
-        return `${base} border-[4px] [clip-path:polygon(0%_15%,_10%_0%,_25%_15%,_40%_0%,_55%_15%,_70%_0%,_85%_15%,_100%_0%,_90%_25%,_100%_40%,_90%_55%,_100%_70%,_90%_85%,_100%_100%,_85%_90%,_70%_100%,_55%_90%,_40%_100%,_25%_90%,_10%_100%,_0%_85%,_10%_70%,_0%_55%,_10%_40%,_0%_25%)] px-10 py-12`;
+        // Visual explosivo usando clip-path irregular
+        return `${base} border-[6px] [clip-path:polygon(0%_20%,_5%_0%,_20%_15%,_35%_0%,_50%_15%,_65%_0%,_80%_15%,_95%_0%,_100%_20%,_85%_35%,_100%_50%,_85%_65%,_100%_80%,_95%_100%,_80%_85%,_65%_100%,_50%_85%,_35%_100%,_20%_85%,_5%_100%,_0%_80%,_15%_65%,_0%_50%,_15%_35%)] px-12 py-14 shadow-none`;
       case 'thought':
-        return `${base} border-[4px] rounded-[50%] shadow-[0_0_0_4px_white,0_0_0_8px_black] px-8 py-10`;
+        // Estilo nuvem (arredondado com bordas suaves)
+        return `${base} border-[4px] rounded-[100%] border-black px-10 py-12 shadow-none`;
       case 'narrative':
-        return `${base} border-[4px] px-6 py-4 shadow-none`;
+        // Retângulo sólido para narração
+        return `${base} border-[5px] px-6 py-4 rounded-none shadow-none`;
       case 'whisper':
-        return `${base} border-[3px] border-dashed rounded-[50%] px-8 py-10`;
+        // Borda tracejada para sussurro
+        return `${base} border-[3px] border-dashed rounded-[50%] px-8 py-10 shadow-none`;
       default:
-        return `${base} border-[4px] rounded-[50%] px-8 py-10 shadow-xl`;
+        // Balão de fala padrão arredondado
+        return `${base} border-[4px] rounded-[50%] px-10 py-12 shadow-none`;
     }
   };
 
@@ -287,7 +292,7 @@ export default function App() {
                         style={{ left: `${s.position.x}%`, top: `${s.position.y}%`, width: `${currentScale}%`, zIndex: 100 + idx }}
                       >
                         <div className={getBubbleStyles(s)}>
-                          <p className="text-black font-black text-center leading-tight select-none uppercase tracking-tighter" style={{ fontSize: `${s.fontSize || 16}px` }}>
+                          <p className="text-black font-black text-center leading-tight select-none uppercase tracking-tighter" style={{ fontSize: `${s.fontSize || 16}px`, fontFamily: 'Noto Sans JP, sans-serif' }}>
                             {s.suggestedDialogue}
                           </p>
                           
@@ -295,10 +300,12 @@ export default function App() {
                             <div className="absolute pointer-events-none" style={{ left: `calc(50% + ${cosA * 45}%)`, top: `calc(50% + ${sinA * 45}%)`, transform: `translate(-50%, -50%) rotate(${s.tailAngle}deg)` }}>
                               <div className="relative flex flex-col items-center">
                                 {s.bubbleType === 'thought' ? (
-                                  <div className="flex flex-col gap-1 items-center mt-2">
-                                    <div className="w-4 h-4 rounded-full border-2 border-black bg-white"></div>
-                                    <div className="w-2 h-2 rounded-full border-2 border-black bg-white"></div>
+                                  <div className="flex flex-col gap-2 items-center mt-4">
+                                    <div className="w-5 h-5 rounded-full border-[3px] border-black bg-white shadow-[2px_2px_0_black]"></div>
+                                    <div className="w-3 h-3 rounded-full border-[2px] border-black bg-white shadow-[1px_1px_0_black]"></div>
                                   </div>
+                                ) : s.bubbleType === 'scream' ? (
+                                   <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-black" style={{ borderTopWidth: `${s.tailLength}px`, marginTop: '-10px' }}></div>
                                 ) : (
                                   <>
                                     <div className="w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-black" style={{ borderTopWidth: `${s.tailLength}px`, marginTop: '-3px' }}></div>
@@ -321,7 +328,7 @@ export default function App() {
             <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-6 no-print">
                <div className="flex items-center gap-3 text-[10px] font-black text-black uppercase italic bg-white px-4 py-3 border-2 border-black shadow-[4px_4px_0px_#000]">
                   <i className="fa-solid fa-circle-info"></i>
-                  <span>Ajuste os modelos de balão para cada tipo de cena!</span>
+                  <span>Alterne entre Fala, Grito e Pensamento para dinamismo!</span>
                </div>
                <button onClick={handleDownload} disabled={isExporting} className="bg-black text-white border-4 border-black px-12 py-4 font-black uppercase text-base shadow-[6px_6px_0px_#ccc] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center gap-2">
                  {isExporting ? <><i className="fa-solid fa-spinner animate-spin"></i> AGUARDE...</> : <><i className="fa-solid fa-download"></i> BAIXAR ARTE</>}
