@@ -1,0 +1,56 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  @apply bg-[#fafafa] text-black;
+}
+
+.manga-font {
+  font-family: 'Bangers', cursive;
+}
+
+.manga-panel {
+  box-shadow: 8px 8px 0px #000;
+  border: 4px solid #000;
+  @apply bg-white;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-black;
+}
+
+.halftone-bg {
+  background-image: radial-gradient(#ccc 1px, transparent 0);
+  background-size: 10px 10px;
+}
+
+@media print {
+  body { background: white !important; padding: 0 !important; }
+  header, footer, .lg\:col-span-4, button, .no-print {
+    display: none !important;
+  }
+  .lg\:col-span-8 {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .manga-panel {
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+  .halftone-bg {
+    background-image: none !important;
+  }
+}
