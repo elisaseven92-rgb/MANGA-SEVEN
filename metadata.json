@@ -1,0 +1,7 @@
+{
+  "name": "Manga Bubble Pro",
+  "description": "Uma ferramenta avançada para adicionar balões de fala autênticos em estilo mangá às suas artes usando as capacidades de edição de imagem da IA Gemini.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

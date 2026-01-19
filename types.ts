@@ -1,0 +1,29 @@
+
+export interface MangaImage {
+  id: string;
+  url: string;
+  base64: string;
+  mimeType: string;
+}
+
+export interface SceneSuggestion {
+  panelNumber: number;
+  description: string;
+  suggestedDialogue: string;
+  position: {
+    x: number; // 0-100
+    y: number; // 0-100
+  };
+  tailAngle: number; // 0-360
+  tailLength: number; // Comprimento do rabicho
+  fontSize: number; // Tamanho da fonte em px
+  readingOrder: number;
+}
+
+export interface GenerationState {
+  isGenerating: boolean;
+  isAnalyzing: boolean;
+  error: string | null;
+  resultUrl: string | null;
+  suggestions: SceneSuggestion[];
+}
