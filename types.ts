@@ -4,6 +4,9 @@ export interface MangaImage {
   url: string;
   base64: string;
   mimeType: string;
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
 }
 
 export type BubbleType = 
@@ -14,7 +17,7 @@ export type BubbleType =
   | 'whisper' 
   | 'wavy' 
   | 'modern' 
-  | 'organic'
+  | 'organic' 
   | 'sharp';
 
 export interface SceneSuggestion {

@@ -10,7 +10,8 @@ export async function analyzeMangaPage(
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      // Use gemini-3-pro-preview for tasks requiring advanced reasoning and multimodal analysis.
+      model: 'gemini-3-pro-preview',
       contents: {
         parts: [
           {

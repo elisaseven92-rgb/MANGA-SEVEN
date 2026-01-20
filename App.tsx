@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import Layout from './components/Layout';
 import { MangaImage, GenerationState, SceneSuggestion, BubbleType } from './types';
 import { analyzeMangaPage } from './services/gemini';
@@ -8,6 +8,7 @@ import { toPng } from 'html-to-image';
 export default function App() {
   const [sourceImages, setSourceImages] = useState<MangaImage[]>([]);
   const [isExporting, setIsExporting] = useState(false);
+  const [activePanelIdx, setActivePanelIdx] = useState<number | null>(null);
   const [generation, setGeneration] = useState<GenerationState>({
     isGenerating: false,
     isAnalyzing: false,
@@ -23,14 +24,13 @@ export default function App() {
     const files = e.target.files;
     if (files) {
       const newImages: MangaImage[] = [];
-      // Fix: Explicitly type filesArray to avoid 'unknown' type inference in some environments
-      const filesArray: File[] = Array.from(files).slice(0, 4 - sourceImages.length);
+      // Fix: Cast the array from FileList to File[] explicitly to resolve type inference issues.
+      const filesArray = Array.from(files).slice(0, 4 - sourceImages.length) as File[];
 
       for (const file of filesArray) {
         const base64 = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onload = (event) => resolve(event.target?.result as string);
-          // Fix: reader.readAsDataURL expects a Blob; explicitly typed File works as it extends Blob
           reader.readAsDataURL(file);
         });
         
@@ -38,15 +38,16 @@ export default function App() {
           id: Math.random().toString(36).substr(2, 9),
           url: base64,
           base64: base64,
-          // Fix: Ensure compiler knows 'file' has a 'type' property
           mimeType: file.type,
+          zoom: 1,
+          offsetX: 0,
+          offsetY: 0,
         });
       }
 
       const updatedImages = [...sourceImages, ...newImages];
       setSourceImages(updatedImages);
       
-      // Se tivermos imagens e não estivermos analisando, pedir sugestões da IA para a página composta
       if (updatedImages.length > 0) {
         triggerAIAnalysis(updatedImages);
       }
@@ -56,13 +57,15 @@ export default function App() {
   const triggerAIAnalysis = async (images: MangaImage[]) => {
     setGeneration(prev => ({ ...prev, isAnalyzing: true, error: null }));
     try {
-      // Usamos a primeira imagem como referência de estilo, mas o ideal seria um composite.
-      // Para simplificar e manter performance, a IA analisa o contexto geral.
       const analysis = await analyzeMangaPage(images[0].base64, images[0].mimeType);
       setGeneration(prev => ({ ...prev, suggestions: analysis, isAnalyzing: false }));
     } catch (err) {
       setGeneration(prev => ({ ...prev, isAnalyzing: false, error: "Modo manual ativado." }));
     }
+  };
+
+  const updateImageTransform = (id: string, field: 'zoom' | 'offsetX' | 'offsetY', val: number) => {
+    setSourceImages(prev => prev.map(img => img.id === id ? { ...img, [field]: val } : img));
   };
 
   const addManualBubble = () => {
@@ -97,7 +100,6 @@ export default function App() {
     if (!exportRef.current) return;
     setIsExporting(true);
     try {
-      // Pequeno delay para garantir que o DOM renderizou após remover guias visuais
       await new Promise(r => setTimeout(r, 600));
       const dataUrl = await toPng(exportRef.current, { 
         cacheBust: true, 
@@ -156,7 +158,6 @@ export default function App() {
     return "relative";
   };
 
-  // Renderiza o grid de imagens baseado na quantidade
   const renderMangaGrid = () => {
     const count = sourceImages.length;
     if (count === 0) return null;
@@ -174,8 +175,15 @@ export default function App() {
           
           return (
             <div key={img.id} className={spanClass}>
-              <img src={img.url} alt={`Panel ${i+1}`} className="w-full h-full object-cover grayscale contrast-125" />
-              <div className="absolute top-2 left-2 bg-black text-white text-[8px] px-2 py-0.5 font-black uppercase italic">
+              <img 
+                src={img.url} 
+                alt={`Panel ${i+1}`} 
+                className="w-full h-full object-cover grayscale contrast-125 transition-transform duration-75 origin-center" 
+                style={{
+                  transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`
+                }}
+              />
+              <div className="absolute top-2 left-2 bg-black text-white text-[8px] px-2 py-0.5 font-black uppercase italic z-10">
                 P-0{i+1}
               </div>
             </div>
@@ -203,32 +211,90 @@ export default function App() {
               </div>
             </div>
 
-            {/* GESTÃO DE QUADROS CARREGADOS */}
-            <div className="grid grid-cols-2 gap-2">
-              {sourceImages.map((img, i) => (
-                <div key={img.id} className="relative group border-2 border-black">
-                  <img src={img.url} className="w-full h-20 object-cover grayscale" />
-                  <button onClick={() => removeImage(img.id)} className="absolute top-1 right-1 bg-white border border-black w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <i className="fa-solid fa-times text-[10px]"></i>
+            {/* GESTÃO DE QUADROS CARREGADOS E TRANSFORMAÇÃO */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-black uppercase border-b-2 border-gray-100 pb-1 flex items-center gap-2">
+                <i className="fa-solid fa-layer-group"></i> Quadros da Página
+              </h3>
+              <div className="grid grid-cols-1 gap-4">
+                {sourceImages.map((img, i) => (
+                  <div key={img.id} className={`border-2 p-2 bg-gray-50 transition-colors ${activePanelIdx === i ? 'border-black' : 'border-gray-200'}`}>
+                    <div className="flex gap-3 mb-2">
+                      <div className="relative w-16 h-16 border-2 border-black flex-shrink-0 overflow-hidden">
+                        <img src={img.url} className="w-full h-full object-cover grayscale" />
+                        <div className="absolute bottom-0 left-0 bg-black text-white text-[8px] px-1 font-bold">Q{i+1}</div>
+                      </div>
+                      <div className="flex-grow space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-black uppercase italic">Quadro {i+1}</span>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => setActivePanelIdx(activePanelIdx === i ? null : i)}
+                              className={`text-[9px] px-2 py-0.5 border border-black font-bold uppercase transition-colors ${activePanelIdx === i ? 'bg-black text-white' : 'bg-white text-black'}`}
+                            >
+                              {activePanelIdx === i ? 'Fechar' : 'Ajustar'}
+                            </button>
+                            <button onClick={() => removeImage(img.id)} className="text-red-600 hover:scale-110 transition-transform">
+                              <i className="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                          </div>
+                        </div>
+                        {/* CONTROLES DE ZOOM E PAN (Aparecem apenas se ativo) */}
+                        {activePanelIdx === i && (
+                          <div className="space-y-2 pt-2 animate-in slide-in-from-top-1 duration-200">
+                            <div className="flex items-center gap-2">
+                              <i className="fa-solid fa-magnifying-glass-plus text-[10px]"></i>
+                              <input 
+                                type="range" min="1" max="5" step="0.1" 
+                                value={img.zoom} 
+                                onChange={e => updateImageTransform(img.id, 'zoom', parseFloat(e.target.value))} 
+                                className="flex-grow h-1 accent-black"
+                              />
+                              <span className="text-[8px] font-bold w-6">{img.zoom.toFixed(1)}x</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <i className="fa-solid fa-arrows-left-right text-[10px]"></i>
+                              <input 
+                                type="range" min="-100" max="100" step="1" 
+                                value={img.offsetX} 
+                                onChange={e => updateImageTransform(img.id, 'offsetX', parseInt(e.target.value))} 
+                                className="flex-grow h-1 accent-black"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <i className="fa-solid fa-arrows-up-down text-[10px]"></i>
+                              <input 
+                                type="range" min="-100" max="100" step="1" 
+                                value={img.offsetY} 
+                                onChange={e => updateImageTransform(img.id, 'offsetY', parseInt(e.target.value))} 
+                                className="flex-grow h-1 accent-black"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {sourceImages.length < 4 && (
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-12 border-2 border-dashed border-gray-300 flex items-center justify-center gap-2 cursor-pointer hover:border-black hover:text-black text-gray-400 transition-all font-black text-xs uppercase"
+                  >
+                    <i className="fa-solid fa-plus"></i> Adicionar Quadro
                   </button>
-                  <div className="absolute bottom-0 left-0 bg-black text-white text-[8px] px-1 font-bold">Q{i+1}</div>
-                </div>
-              ))}
-              {sourceImages.length < 4 && (
-                <div onClick={() => fileInputRef.current?.click()} className="h-20 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-black transition-colors">
-                  <i className="fa-solid fa-plus text-gray-300"></i>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {sourceImages.length > 0 && (
               <div className="space-y-4 pt-4 border-t-4 border-black">
                 <div className="flex justify-between items-center">
                    <h3 className="text-sm font-black uppercase">Balões de Diálogo</h3>
-                   <button onClick={addManualBubble} className="text-[10px] underline font-bold">Novo Balão</button>
+                   <button onClick={addManualBubble} className="bg-black text-white px-2 py-0.5 text-[8px] font-black uppercase italic">+ Novo</button>
                 </div>
                 
-                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                   {generation.suggestions.map((s, i) => (
                     <div key={i} className="border-2 border-black p-3 space-y-3 bg-white shadow-[3px_3px_0px_#000]">
                       <div className="grid grid-cols-5 gap-1">
@@ -245,11 +311,11 @@ export default function App() {
                       
                       <div className="flex gap-4">
                         <div className="flex-1 space-y-1">
-                          <label className="text-[7px] font-black uppercase">Escala</label>
+                          <label className="text-[7px] font-black uppercase">Tamanho</label>
                           <input type="range" min="10" max="80" value={s.bubbleScale} onChange={e => updateSuggestion(i, 'bubbleScale', parseInt(e.target.value))} className="w-full accent-black h-1" />
                         </div>
                         <div className="flex-1 space-y-1">
-                          <label className="text-[7px] font-black uppercase">Rabicho</label>
+                          <label className="text-[7px] font-black uppercase">Rotação</label>
                           <input type="range" min="0" max="360" value={s.tailAngle} onChange={e => updateSuggestion(i, 'tailAngle', parseInt(e.target.value))} className="w-full accent-black h-1" />
                         </div>
                       </div>
@@ -292,7 +358,7 @@ export default function App() {
               <div className="relative flex-grow shadow-2xl bg-white border-2 border-black">
                 {renderMangaGrid()}
                 
-                {/* CAMADA DE BALÕES (Posicionados sobre o grid completo) */}
+                {/* CAMADA DE BALÕES */}
                 <div className="absolute inset-0 pointer-events-none">
                   {generation.suggestions.map((s, idx) => {
                     const rad = (s.tailAngle - 90) * (Math.PI / 180);
