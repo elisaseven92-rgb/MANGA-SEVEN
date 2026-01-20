@@ -1,12 +1,12 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Layout from './components/Layout';
 import { MangaImage, GenerationState, SceneSuggestion, BubbleType } from './types';
 import { analyzeMangaPage } from './services/gemini';
 import { toPng } from 'html-to-image';
 
 export default function App() {
-  const [sourceImage, setSourceImage] = useState<MangaImage | null>(null);
+  const [sourceImages, setSourceImages] = useState<MangaImage[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [generation, setGeneration] = useState<GenerationState>({
     isGenerating: false,
@@ -20,27 +20,48 @@ export default function App() {
   const exportRef = useRef<HTMLDivElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64 = event.target?.result as string;
-        const newImg = {
-          id: Date.now().toString(),
+    const files = e.target.files;
+    if (files) {
+      const newImages: MangaImage[] = [];
+      // Fix: Explicitly type filesArray to avoid 'unknown' type inference in some environments
+      const filesArray: File[] = Array.from(files).slice(0, 4 - sourceImages.length);
+
+      for (const file of filesArray) {
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (event) => resolve(event.target?.result as string);
+          // Fix: reader.readAsDataURL expects a Blob; explicitly typed File works as it extends Blob
+          reader.readAsDataURL(file);
+        });
+        
+        newImages.push({
+          id: Math.random().toString(36).substr(2, 9),
           url: base64,
           base64: base64,
+          // Fix: Ensure compiler knows 'file' has a 'type' property
           mimeType: file.type,
-        };
-        setSourceImage(newImg);
-        setGeneration({ isGenerating: false, isAnalyzing: true, error: null, resultUrl: null, suggestions: [] });
-        try {
-          const analysis = await analyzeMangaPage(base64, file.type);
-          setGeneration(prev => ({ ...prev, suggestions: analysis, isAnalyzing: false, resultUrl: base64 }));
-        } catch (err) {
-          setGeneration(prev => ({ ...prev, isAnalyzing: false, error: "Modo manual ativado." }));
-        }
-      };
-      reader.readAsDataURL(file);
+        });
+      }
+
+      const updatedImages = [...sourceImages, ...newImages];
+      setSourceImages(updatedImages);
+      
+      // Se tivermos imagens e não estivermos analisando, pedir sugestões da IA para a página composta
+      if (updatedImages.length > 0) {
+        triggerAIAnalysis(updatedImages);
+      }
+    }
+  };
+
+  const triggerAIAnalysis = async (images: MangaImage[]) => {
+    setGeneration(prev => ({ ...prev, isAnalyzing: true, error: null }));
+    try {
+      // Usamos a primeira imagem como referência de estilo, mas o ideal seria um composite.
+      // Para simplificar e manter performance, a IA analisa o contexto geral.
+      const analysis = await analyzeMangaPage(images[0].base64, images[0].mimeType);
+      setGeneration(prev => ({ ...prev, suggestions: analysis, isAnalyzing: false }));
+    } catch (err) {
+      setGeneration(prev => ({ ...prev, isAnalyzing: false, error: "Modo manual ativado." }));
     }
   };
 
@@ -76,10 +97,15 @@ export default function App() {
     if (!exportRef.current) return;
     setIsExporting(true);
     try {
-      await new Promise(r => setTimeout(r, 500));
-      const dataUrl = await toPng(exportRef.current, { cacheBust: true, pixelRatio: 3 });
+      // Pequeno delay para garantir que o DOM renderizou após remover guias visuais
+      await new Promise(r => setTimeout(r, 600));
+      const dataUrl = await toPng(exportRef.current, { 
+        cacheBust: true, 
+        pixelRatio: 3,
+        backgroundColor: '#ffffff'
+      });
       const link = document.createElement('a');
-      link.download = `manga-final-${Date.now()}.png`;
+      link.download = `manga-page-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
     } finally {
@@ -88,15 +114,15 @@ export default function App() {
   };
 
   const bubbleOptions: { label: string; value: BubbleType; icon: string }[] = [
-    { label: 'Speech', value: 'speech', icon: 'fa-comment' },
-    { label: 'Thought', value: 'thought', icon: 'fa-cloud' },
-    { label: 'Scream', value: 'scream', icon: 'fa-bolt' },
-    { label: 'Wavy', value: 'wavy', icon: 'fa-cloud-meatball' },
+    { label: 'Fala', value: 'speech', icon: 'fa-comment' },
+    { label: 'Pensa', value: 'thought', icon: 'fa-cloud' },
+    { label: 'Grito', value: 'scream', icon: 'fa-bolt' },
+    { label: 'Nuvem', value: 'wavy', icon: 'fa-cloud-meatball' },
     { label: 'Modern', value: 'modern', icon: 'fa-window-maximize' },
     { label: 'Sharp', value: 'sharp', icon: 'fa-caret-up' },
     { label: 'Organic', value: 'organic', icon: 'fa-circle-nodes' },
-    { label: 'Narrative', value: 'narrative', icon: 'fa-square' },
-    { label: 'Whisper', value: 'whisper', icon: 'fa-ellipsis' },
+    { label: 'Narra', value: 'narrative', icon: 'fa-square' },
+    { label: 'Sussu', value: 'whisper', icon: 'fa-ellipsis' },
   ];
 
   const getBubbleStyles = (type: BubbleType) => {
@@ -115,7 +141,7 @@ export default function App() {
       case 'sharp':
         return `${base} border-[4px] [clip-path:polygon(10%_0%,_90%_0%,_100%_20%,_100%_80%,_90%_100%,_10%_100%,_0%_80%,_0%_20%)] px-10 py-12`;
       case 'narrative':
-        return `${base} border-[5px] px-6 py-4 rounded-none`;
+        return `${base} border-[5px] px-6 py-4 rounded-none shadow-[2px_2px_0_black]`;
       case 'whisper':
         return `${base} border-[3px] border-dashed rounded-[50%] px-8 py-10`;
       default:
@@ -130,67 +156,152 @@ export default function App() {
     return "relative";
   };
 
+  // Renderiza o grid de imagens baseado na quantidade
+  const renderMangaGrid = () => {
+    const count = sourceImages.length;
+    if (count === 0) return null;
+
+    let gridClass = "grid gap-2 bg-black p-2 border-4 border-black";
+    if (count === 1) gridClass += " grid-cols-1";
+    if (count === 2) gridClass += " grid-cols-1 grid-rows-2 h-full";
+    if (count === 3 || count === 4) gridClass += " grid-cols-2 grid-rows-2 h-full";
+
+    return (
+      <div className={gridClass} style={{ aspectRatio: '1 / 1.4' }}>
+        {sourceImages.map((img, i) => {
+          let spanClass = "relative bg-white overflow-hidden";
+          if (count === 3 && i === 0) spanClass += " col-span-2";
+          
+          return (
+            <div key={img.id} className={spanClass}>
+              <img src={img.url} alt={`Panel ${i+1}`} className="w-full h-full object-cover grayscale contrast-125" />
+              <div className="absolute top-2 left-2 bg-black text-white text-[8px] px-2 py-0.5 font-black uppercase italic">
+                P-0{i+1}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const removeImage = (id: string) => {
+    setSourceImages(prev => prev.filter(img => img.id !== id));
+  };
+
   return (
     <Layout>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* SIDEBAR DE CONTROLE */}
         <div className="lg:col-span-4 no-print space-y-6">
-          <div className="manga-panel p-5 bg-white space-y-4">
+          <div className="manga-panel p-5 bg-white space-y-6">
             <div className="flex justify-between items-center border-b-4 border-black pb-2">
-              <h2 className="text-xl font-black uppercase italic tracking-tighter">Estúdio Pro</h2>
-              <button onClick={addManualBubble} className="bg-black text-white px-3 py-1 text-[10px] font-black uppercase">+ Balão</button>
-            </div>
-            {!sourceImage ? (
-              <div onClick={() => fileInputRef.current?.click()} className="border-4 border-dashed border-black p-12 text-center cursor-pointer hover:bg-black hover:text-white transition-all rounded-xl">
-                <i className="fa-solid fa-cloud-arrow-up text-4xl mb-2"></i>
-                <p className="font-black text-xs uppercase">Carregar Arte</p>
-                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
+              <h2 className="text-xl font-black uppercase italic tracking-tighter">Manga Composer</h2>
+              <div className="flex gap-2">
+                <button onClick={() => fileInputRef.current?.click()} className="bg-black text-white px-3 py-1 text-[10px] font-black uppercase">+ Quadros</button>
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" multiple />
               </div>
-            ) : (
-              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
-                {generation.suggestions.map((s, i) => (
-                  <div key={i} className="border-2 border-black p-4 space-y-3 bg-white shadow-[4px_4px_0px_#000]">
-                    <div className="grid grid-cols-5 gap-1">
-                      {bubbleOptions.map(opt => (
-                        <button key={opt.value} onClick={() => updateSuggestion(i, 'bubbleType', opt.value)} className={`p-1 border-2 border-black text-[7px] font-black transition-all ${s.bubbleType === opt.value ? 'bg-black text-white' : 'bg-white'}`} title={opt.label}>
-                          <i className={`fa-solid ${opt.icon}`}></i>
+            </div>
+
+            {/* GESTÃO DE QUADROS CARREGADOS */}
+            <div className="grid grid-cols-2 gap-2">
+              {sourceImages.map((img, i) => (
+                <div key={img.id} className="relative group border-2 border-black">
+                  <img src={img.url} className="w-full h-20 object-cover grayscale" />
+                  <button onClick={() => removeImage(img.id)} className="absolute top-1 right-1 bg-white border border-black w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i className="fa-solid fa-times text-[10px]"></i>
+                  </button>
+                  <div className="absolute bottom-0 left-0 bg-black text-white text-[8px] px-1 font-bold">Q{i+1}</div>
+                </div>
+              ))}
+              {sourceImages.length < 4 && (
+                <div onClick={() => fileInputRef.current?.click()} className="h-20 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-black transition-colors">
+                  <i className="fa-solid fa-plus text-gray-300"></i>
+                </div>
+              )}
+            </div>
+
+            {sourceImages.length > 0 && (
+              <div className="space-y-4 pt-4 border-t-4 border-black">
+                <div className="flex justify-between items-center">
+                   <h3 className="text-sm font-black uppercase">Balões de Diálogo</h3>
+                   <button onClick={addManualBubble} className="text-[10px] underline font-bold">Novo Balão</button>
+                </div>
+                
+                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                  {generation.suggestions.map((s, i) => (
+                    <div key={i} className="border-2 border-black p-3 space-y-3 bg-white shadow-[3px_3px_0px_#000]">
+                      <div className="grid grid-cols-5 gap-1">
+                        {bubbleOptions.map(opt => (
+                          <button key={opt.value} onClick={() => updateSuggestion(i, 'bubbleType', opt.value)} className={`p-1 border-2 border-black text-[7px] font-black transition-all ${s.bubbleType === opt.value ? 'bg-black text-white' : 'bg-white'}`} title={opt.label}>
+                            <i className={`fa-solid ${opt.icon}`}></i>
+                          </button>
+                        ))}
+                        <button onClick={() => setGeneration(p => ({...p, suggestions: p.suggestions.filter((_, idx) => idx !== i)}))} className="p-1 border-2 border-black text-[7px] font-black text-red-600">
+                          <i className="fa-solid fa-trash"></i>
                         </button>
-                      ))}
-                      <button onClick={() => setGeneration(p => ({...p, suggestions: p.suggestions.filter((_, idx) => idx !== i)}))} className="p-1 border-2 border-black text-[7px] font-black text-red-600">
-                        <i className="fa-solid fa-trash"></i>
-                      </button>
-                    </div>
-                    <textarea value={s.suggestedDialogue} onChange={e => updateSuggestion(i, 'suggestedDialogue', e.target.value)} className="w-full text-xs font-bold border-2 border-black p-2 h-16 resize-none focus:bg-yellow-50 outline-none" />
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <label className="text-[7px] font-black uppercase block">Tamanho/Escala</label>
-                        <input type="range" min="10" max="80" value={s.bubbleScale} onChange={e => updateSuggestion(i, 'bubbleScale', parseInt(e.target.value))} className="w-full accent-black h-1" />
                       </div>
-                      <div className="space-y-1">
-                        <label className="text-[7px] font-black uppercase block">Ang/Comp Rabicho</label>
-                        <input type="range" min="0" max="360" value={s.tailAngle} onChange={e => updateSuggestion(i, 'tailAngle', parseInt(e.target.value))} className="w-full accent-black h-1" />
+                      <textarea value={s.suggestedDialogue} onChange={e => updateSuggestion(i, 'suggestedDialogue', e.target.value)} className="w-full text-[10px] font-bold border-2 border-black p-1.5 h-12 resize-none focus:bg-yellow-50 outline-none" />
+                      
+                      <div className="flex gap-4">
+                        <div className="flex-1 space-y-1">
+                          <label className="text-[7px] font-black uppercase">Escala</label>
+                          <input type="range" min="10" max="80" value={s.bubbleScale} onChange={e => updateSuggestion(i, 'bubbleScale', parseInt(e.target.value))} className="w-full accent-black h-1" />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <label className="text-[7px] font-black uppercase">Rabicho</label>
+                          <input type="range" min="0" max="360" value={s.tailAngle} onChange={e => updateSuggestion(i, 'tailAngle', parseInt(e.target.value))} className="w-full accent-black h-1" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-100">
+                         <div className="flex flex-col gap-1">
+                            <span className="text-[6px] font-bold uppercase opacity-50">Posição X</span>
+                            <input type="range" min="0" max="100" value={s.position.x} onChange={e => updatePosition(i, parseInt(e.target.value), s.position.y)} className="w-full h-1 accent-black" />
+                         </div>
+                         <div className="flex flex-col gap-1">
+                            <span className="text-[6px] font-bold uppercase opacity-50">Posição Y</span>
+                            <input type="range" min="0" max="100" value={s.position.y} onChange={e => updatePosition(i, s.position.x, parseInt(e.target.value))} className="w-full h-1 accent-black" />
+                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </div>
         </div>
 
+        {/* ÁREA DA FOLHA DE MANGÁ */}
         <div className="lg:col-span-8 flex flex-col items-center">
-          <div ref={exportRef} className="manga-panel bg-white p-4 min-h-[700px] w-full relative halftone-bg flex items-center justify-center overflow-hidden border-4 border-black">
-            {generation.isAnalyzing && <div className="absolute inset-0 z-50 bg-white/90 flex flex-col items-center justify-center font-black uppercase italic animate-pulse">Letreirando via IA...</div>}
-            {sourceImage && (
-              <div className="relative inline-block bg-white shadow-2xl border-2 border-black">
-                <img src={sourceImage.url} alt="Manga" className="w-full h-auto block grayscale contrast-125" />
+          <div ref={exportRef} className="manga-panel bg-white p-6 min-h-[850px] w-full max-w-[700px] relative halftone-bg flex flex-col overflow-hidden border-4 border-black">
+            {generation.isAnalyzing && (
+              <div className="absolute inset-0 z-50 bg-white/95 flex flex-col items-center justify-center font-black uppercase italic animate-pulse">
+                <i className="fa-solid fa-wand-magic-sparkles text-3xl mb-4"></i>
+                Organizando Páginas...
+              </div>
+            )}
+            
+            {sourceImages.length === 0 ? (
+              <div className="flex-grow flex flex-col items-center justify-center opacity-20 select-none border-4 border-dashed border-black m-4">
+                <i className="fa-solid fa-layer-group text-8xl mb-6"></i>
+                <p className="text-2xl font-black uppercase italic tracking-tighter">Composição Multi-Painel</p>
+                <p className="text-[10px] font-bold tracking-[0.4em] mt-2">COLOQUE ATÉ 4 IMAGENS</p>
+              </div>
+            ) : (
+              <div className="relative flex-grow shadow-2xl bg-white border-2 border-black">
+                {renderMangaGrid()}
+                
+                {/* CAMADA DE BALÕES (Posicionados sobre o grid completo) */}
                 <div className="absolute inset-0 pointer-events-none">
                   {generation.suggestions.map((s, idx) => {
                     const rad = (s.tailAngle - 90) * (Math.PI / 180);
                     const cosA = Math.cos(rad);
                     const sinA = Math.sin(rad);
                     const scale = s.bubbleScale || 35;
+                    
                     return (
-                      <div key={idx} className="absolute transform -translate-x-1/2 -translate-y-1/2" style={{ left: `${s.position.x}%`, top: `${s.position.y}%`, width: `${scale}%`, zIndex: 100 + idx }}>
+                      <div key={idx} className="absolute transform -translate-x-1/2 -translate-y-1/2" style={{ left: `${s.position.x}%`, top: `${s.position.y}%`, width: `${scale}%`, zIndex: 200 + idx }}>
                         <div className={getFilter(s.bubbleType)}>
                           {s.bubbleType !== 'narrative' && s.tailLength > 0 && (
                             <div className="absolute pointer-events-none" style={{ left: `calc(50% + ${cosA * 55}%)`, top: `calc(50% + ${sinA * 55}%)`, transform: `translate(-50%, -50%) rotate(${s.tailAngle}deg)` }}>
@@ -208,7 +319,7 @@ export default function App() {
                             </div>
                           )}
                           <div className={getBubbleStyles(s.bubbleType)}>
-                            <p className="text-black font-black text-center leading-tight select-none uppercase tracking-tighter" style={{ fontSize: `${s.fontSize || 16}px` }}>{s.suggestedDialogue}</p>
+                            <p className="text-black font-black text-center leading-tight select-none uppercase tracking-tighter" style={{ fontSize: `${s.fontSize || 16}px`, fontFamily: 'Noto Sans JP' }}>{s.suggestedDialogue}</p>
                           </div>
                         </div>
                       </div>
@@ -218,11 +329,13 @@ export default function App() {
               </div>
             )}
           </div>
-          {sourceImage && (
-            <div className="mt-6 flex gap-4 w-full">
-              <button onClick={() => setSourceImage(null)} className="flex-1 py-4 bg-white border-4 border-black font-black uppercase italic tracking-widest hover:bg-black hover:text-white transition-all">Trocar Arte</button>
-              <button onClick={handleDownload} disabled={isExporting} className="flex-1 py-4 bg-black text-white border-4 border-black font-black uppercase italic tracking-widest shadow-[8px_8px_0px_#ccc] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
-                {isExporting ? 'Processando...' : 'Exportar Página'}
+          
+          {sourceImages.length > 0 && (
+            <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-[700px]">
+              <button onClick={() => setSourceImages([])} className="py-4 bg-white border-4 border-black font-black uppercase italic tracking-widest hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_#000]">Limpar Página</button>
+              <button onClick={handleDownload} disabled={isExporting} className="py-4 bg-black text-white border-4 border-black font-black uppercase italic tracking-widest shadow-[8px_8px_0px_#ccc] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center justify-center gap-2">
+                {isExporting ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-file-export"></i>}
+                Exportar HQ
               </button>
             </div>
           )}

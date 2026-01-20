@@ -5,7 +5,7 @@
 
 body {
   font-family: 'Noto Sans JP', sans-serif;
-  @apply bg-[#fafafa] text-black;
+  @apply bg-[#f0f0f0] text-black;
 }
 
 .manga-font {
@@ -13,31 +13,41 @@ body {
 }
 
 .manga-panel {
-  box-shadow: 8px 8px 0px #000;
+  box-shadow: 12px 12px 0px #000;
   border: 4px solid #000;
-  @apply bg-white;
+  @apply bg-white transition-shadow;
+}
+
+.manga-panel:hover {
+  box-shadow: 16px 16px 0px #000;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  @apply bg-gray-200;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-black;
+  @apply bg-black rounded-full;
 }
 
 .halftone-bg {
-  background-image: radial-gradient(#ccc 1px, transparent 0);
-  background-size: 10px 10px;
+  background-image: radial-gradient(#aaa 1px, transparent 0);
+  background-size: 8px 8px;
+}
+
+/* Garante que o texto dos balões seja nítido */
+p {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 @media print {
   body { background: white !important; padding: 0 !important; }
-  header, footer, .lg\:col-span-4, button, .no-print {
+  header, footer, .lg\:col-span-4, button, .no-print, .absolute.top-2.left-2 {
     display: none !important;
   }
   .lg\:col-span-8 {
