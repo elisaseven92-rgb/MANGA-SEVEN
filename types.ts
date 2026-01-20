@@ -6,7 +6,7 @@ export interface MangaImage {
   mimeType: string;
 }
 
-export type BubbleType = 'speech' | 'thought' | 'scream' | 'narrative' | 'whisper';
+export type BubbleType = 'speech' | 'thought' | 'scream' | 'narrative' | 'whisper' | 'wavy' | 'modern' | 'organic';
 
 export interface SceneSuggestion {
   panelNumber: number;

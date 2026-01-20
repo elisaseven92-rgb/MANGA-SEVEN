@@ -126,18 +126,27 @@ export default function App() {
     { label: 'Fala', value: 'speech', icon: 'fa-comment' },
     { label: 'Grito', value: 'scream', icon: 'fa-bolt' },
     { label: 'Pensa', value: 'thought', icon: 'fa-cloud' },
+    { label: 'Nuvem', value: 'wavy', icon: 'fa-cloud-meatball' },
+    { label: 'Retâng', value: 'modern', icon: 'fa-window-maximize' },
+    { label: 'Orgâni', value: 'organic', icon: 'fa-circle-nodes' },
     { label: 'Narra', value: 'narrative', icon: 'fa-square' },
     { label: 'Sussu', value: 'whisper', icon: 'fa-ellipsis' },
   ];
 
-  // Estilos de container e forma para balões perfeitos
   const getBubbleInnerStyles = (type: BubbleType) => {
-    const base = "w-full h-full bg-white flex items-center justify-center border-black transition-all";
+    const base = "w-full h-full bg-white flex items-center justify-center border-black transition-all overflow-visible";
     switch (type) {
       case 'scream':
         return `${base} [clip-path:polygon(0%_20%,_5%_0%,_20%_15%,_35%_0%,_50%_15%,_65%_0%,_80%_15%,_95%_0%,_100%_20%,_85%_35%,_100%_50%,_85%_65%,_100%_80%,_95%_100%,_80%_85%,_65%_100%,_50%_85%,_35%_100%,_20%_85%,_5%_100%,_0%_80%,_15%_65%,_0%_50%,_15%_35%)] px-12 py-12`;
+      case 'wavy':
+        // Balão estilo nuvem (wavy speech) do topo da imagem
+        return `${base} [clip-path:polygon(20%_0%,_30%_5%,_40%_0%,_50%_5%,_60%_0%,_70%_5%,_80%_0%,_90%_5%,_100%_20%,_95%_30%,_100%_40%,_95%_50%,_100%_60%,_95%_70%,_100%_80%,_90%_95%,_80%_100%,_70%_95%,_60%_100%,_50%_95%,_40%_100%,_30%_95%,_20%_100%,_5%_80%,_0%_70%,_5%_60%,_0%_50%,_5%_40%,_0%_30%,_5%_20%)] px-10 py-10`;
       case 'thought':
         return `${base} border-[4px] rounded-[100%] px-10 py-12`;
+      case 'modern':
+        return `${base} border-[4px] rounded-2xl px-8 py-10`;
+      case 'organic':
+        return `${base} border-[4px] [border-radius:60%_40%_30%_70%_/_60%_30%_70%_40%] px-10 py-12`;
       case 'narrative':
         return `${base} border-[5px] px-6 py-4 rounded-none`;
       case 'whisper':
@@ -148,8 +157,8 @@ export default function App() {
   };
 
   const getContainerStyles = (type: BubbleType) => {
-    if (type === 'scream') {
-      // Filtro para garantir a borda preta nítida em volta do clip-path
+    // Tipos que usam clip-path precisam de filtros para simular borda
+    if (type === 'scream' || type === 'wavy') {
       return "relative [filter:drop-shadow(3px_0_0_black)_drop-shadow(-3px_0_0_black)_drop-shadow(0_3px_0_black)_drop-shadow(0_-3px_0_black)]";
     }
     return "relative";
@@ -158,20 +167,19 @@ export default function App() {
   return (
     <Layout>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* PAINEL DE EDIÇÃO */}
         <div className="lg:col-span-4 space-y-6 no-print">
           <div className="manga-panel bg-white p-5 space-y-4">
             <div className="flex justify-between items-center border-b-4 border-black pb-2">
-              <h2 className="text-xl font-black uppercase flex items-center gap-2 italic">
+              <h2 className="text-xl font-black uppercase flex items-center gap-2 italic tracking-tighter">
                 <i className="fa-solid fa-wand-magic-sparkles"></i>
-                Estúdio
+                Estúdio 2.0
               </h2>
               {sourceImage && (
                 <button 
                   onClick={addManualBubble}
                   className="bg-black text-white text-[10px] font-black px-3 py-1 uppercase hover:bg-gray-800 transition-colors"
                 >
-                  + Add Balão
+                  + Novo Balão
                 </button>
               )}
             </div>
@@ -179,7 +187,7 @@ export default function App() {
             {!sourceImage ? (
               <div onClick={() => fileInputRef.current?.click()} className="border-4 border-dashed border-black p-12 text-center cursor-pointer hover:bg-black hover:text-white transition-all rounded-xl group">
                 <i className="fa-solid fa-cloud-arrow-up text-5xl mb-4 group-hover:scale-110 transition-transform"></i>
-                <p className="font-black text-sm uppercase">Carregar Manuscrito</p>
+                <p className="font-black text-sm uppercase">Abrir Arte Principal</p>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
               </div>
             ) : (
@@ -191,21 +199,22 @@ export default function App() {
                     </button>
                     
                     <div className="space-y-2">
-                      <div className="flex flex-wrap gap-1">
+                      <div className="grid grid-cols-4 gap-1">
                         {bubbleOptions.map(opt => (
                           <button
                             key={opt.value}
                             onClick={() => handleUpdateSuggestion(idx, 'bubbleType', opt.value)}
-                            className={`flex-1 flex flex-col items-center p-1 border-2 border-black text-[8px] font-black uppercase transition-colors ${s.bubbleType === opt.value ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}
+                            className={`flex flex-col items-center p-1 border-2 border-black text-[7px] font-black uppercase transition-colors ${s.bubbleType === opt.value ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}
+                            title={opt.label}
                           >
                             <i className={`fa-solid ${opt.icon} mb-1`}></i>
-                            {opt.label}
+                            <span className="truncate w-full text-center">{opt.label}</span>
                           </button>
                         ))}
                       </div>
 
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="text-[9px] font-black uppercase italic">Camada #{idx + 1}</span>
+                      <div className="flex items-center justify-between gap-4 pt-2">
+                        <span className="text-[9px] font-black uppercase italic">Item #{idx + 1}</span>
                         <div className="flex gap-2">
                           <div className="flex items-center gap-1">
                             <i className="fa-solid fa-text-height text-[8px]"></i>
@@ -227,7 +236,7 @@ export default function App() {
 
                     <div className="grid grid-cols-2 gap-4 border-t-2 border-black pt-3">
                       <div className="space-y-2">
-                        <label className="text-[8px] font-black uppercase block">Posição X/Y</label>
+                        <label className="text-[8px] font-black uppercase block">Coordenadas X/Y</label>
                         <input type="range" min="0" max="100" value={s.position.x} onChange={(e) => updatePosition(idx, parseInt(e.target.value), s.position.y)} className="w-full h-1 bg-gray-200 accent-black mb-1" />
                         <input type="range" min="0" max="100" value={s.position.y} onChange={(e) => updatePosition(idx, s.position.x, parseInt(e.target.value))} className="w-full h-1 bg-gray-200 accent-black" />
                       </div>
@@ -236,7 +245,7 @@ export default function App() {
                         <button onClick={() => moveStep(idx, 0, -2)} className="h-6 bg-black text-white flex items-center justify-center"><i className="fa-solid fa-caret-up"></i></button>
                         <div />
                         <button onClick={() => moveStep(idx, -2, 0)} className="h-6 bg-black text-white flex items-center justify-center"><i className="fa-solid fa-caret-left"></i></button>
-                        <div className="h-6 flex items-center justify-center text-[8px] font-black border border-black italic">POS</div>
+                        <div className="h-6 flex items-center justify-center text-[7px] font-black border border-black italic">MOVE</div>
                         <button onClick={() => moveStep(idx, 2, 0)} className="h-6 bg-black text-white flex items-center justify-center"><i className="fa-solid fa-caret-right"></i></button>
                         <div />
                         <button onClick={() => moveStep(idx, 0, 2)} className="h-6 bg-black text-white flex items-center justify-center"><i className="fa-solid fa-caret-down"></i></button>
@@ -247,40 +256,36 @@ export default function App() {
                     {s.bubbleType !== 'narrative' && (
                       <div className="grid grid-cols-2 gap-3 border-t-2 border-black pt-3">
                         <div className="space-y-1">
-                          <label className="text-[8px] font-black uppercase">Direção do Rabicho</label>
+                          <label className="text-[8px] font-black uppercase">Rotação Rabicho</label>
                           <input type="range" min="0" max="360" value={s.tailAngle} onChange={(e) => handleUpdateSuggestion(idx, 'tailAngle', parseInt(e.target.value))} className="w-full h-1 accent-black" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[8px] font-black uppercase">Distância</label>
+                          <label className="text-[8px] font-black uppercase">Extensão</label>
                           <input type="range" min="0" max="100" value={s.tailLength} onChange={(e) => handleUpdateSuggestion(idx, 'tailLength', parseInt(e.target.value))} className="w-full h-1 accent-black" />
                         </div>
                       </div>
                     )}
                   </div>
                 ))}
-                <button onClick={() => setSourceImage(null)} className="w-full py-4 bg-gray-100 text-black font-black uppercase text-[10px] border-2 border-black hover:bg-black hover:text-white transition-all tracking-widest">
-                  Resetar Canvas
-                </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* CANVAS DE DESENHO */}
         <div className="lg:col-span-8">
           <div ref={exportRef} className="manga-panel bg-white p-4 min-h-[800px] flex items-center justify-center relative halftone-bg overflow-hidden border-4 border-black group">
             {generation.isAnalyzing && (
               <div className="absolute inset-0 z-50 bg-white/95 flex flex-col items-center justify-center no-print">
                 <div className="w-16 h-16 border-4 border-gray-100 border-t-black rounded-full animate-spin mb-4"></div>
-                <h3 className="text-xl font-black uppercase italic animate-pulse tracking-widest">Letreirando via IA...</h3>
+                <h3 className="text-xl font-black uppercase italic animate-pulse tracking-widest">Processando Página...</h3>
               </div>
             )}
 
             {!sourceImage ? (
               <div className="text-center opacity-20 flex flex-col items-center no-print select-none">
-                <i className="fa-solid fa-palette text-[100px] mb-6"></i>
+                <i className="fa-solid fa-swatchbook text-[100px] mb-6"></i>
                 <p className="text-3xl font-black uppercase italic tracking-tighter">Seven Mangá Canvas</p>
-                <p className="text-[10px] font-bold tracking-[0.4em] mt-2">MONOCHROME EDITION 2.0</p>
+                <p className="text-[10px] font-bold tracking-[0.4em] mt-2">MULTIPLE MODELS ADDED</p>
               </div>
             ) : (
               <div className="relative inline-block w-full max-w-3xl bg-white border-2 border-black shadow-2xl">
@@ -299,7 +304,6 @@ export default function App() {
                         style={{ left: `${s.position.x}%`, top: `${s.position.y}%`, width: `${currentScale}%`, zIndex: 100 + idx }}
                       >
                         <div className={getContainerStyles(s.bubbleType)}>
-                          {/* Rabicho posicionado fora do clip-path */}
                           {s.bubbleType !== 'narrative' && s.tailLength > 0 && (
                             <div className="absolute pointer-events-none" style={{ left: `calc(50% + ${cosA * 55}%)`, top: `calc(50% + ${sinA * 55}%)`, transform: `translate(-50%, -50%) rotate(${s.tailAngle}deg)` }}>
                               <div className="relative flex flex-col items-center">
@@ -319,7 +323,6 @@ export default function App() {
                             </div>
                           )}
 
-                          {/* Balão (Forma Principal) */}
                           <div className={getBubbleInnerStyles(s.bubbleType)}>
                             <p 
                               className="text-black font-black text-center leading-tight select-none uppercase tracking-tighter" 
@@ -343,16 +346,21 @@ export default function App() {
           {sourceImage && (
             <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-6 no-print">
                <div className="flex items-center gap-3 text-[10px] font-black text-black uppercase italic bg-white px-5 py-3 border-2 border-black shadow-[4px_4px_0px_#000]">
-                  <i className="fa-solid fa-circle-check text-lg"></i>
-                  <span>Análise Concluída: Bordas e rabichos corrigidos para estilo nítido de mangá.</span>
+                  <i className="fa-solid fa-images text-lg"></i>
+                  <span>Novos Modelos: Wavy, Modern e Organic agora disponíveis!</span>
                </div>
-               <button 
-                  onClick={handleDownload} 
-                  disabled={isExporting} 
-                  className="bg-black text-white border-4 border-black px-12 py-4 font-black uppercase text-base shadow-[6px_6px_0px_#ccc] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center gap-2 group"
-               >
-                 {isExporting ? <><i className="fa-solid fa-spinner animate-spin"></i> FINALIZANDO...</> : <><i className="fa-solid fa-download group-hover:bounce"></i> BAIXAR PÁGINA</>}
-               </button>
+               <div className="flex gap-4">
+                 <button onClick={() => setSourceImage(null)} className="px-6 py-4 bg-white border-4 border-black font-black uppercase text-sm hover:bg-black hover:text-white transition-all">
+                   Trocar Arte
+                 </button>
+                 <button 
+                    onClick={handleDownload} 
+                    disabled={isExporting} 
+                    className="bg-black text-white border-4 border-black px-12 py-4 font-black uppercase text-base shadow-[6px_6px_0px_#ccc] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center gap-2 group"
+                 >
+                   {isExporting ? <><i className="fa-solid fa-spinner animate-spin"></i> SALVANDO...</> : <><i className="fa-solid fa-check-double group-hover:scale-125 transition-transform"></i> EXPORTAR PÁGINA</>}
+                 </button>
+               </div>
             </div>
           )}
         </div>
