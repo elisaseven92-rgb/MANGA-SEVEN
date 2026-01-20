@@ -174,13 +174,11 @@ export default function App() {
       <div className={gridClass} style={{ aspectRatio: '1 / 1.4' }}>
         {sourceImages.map((img, i) => {
           const isActive = activePanelIdx === i;
-          // Se o quadro estiver ativo, removemos o overflow-hidden para que o usuário veja a imagem sem cortes durante o ajuste
           let spanClass = `relative bg-white transition-all ${isActive ? 'z-40 overflow-visible ring-4 ring-black' : 'overflow-hidden'}`;
           if (count === 3 && i === 0) spanClass += " col-span-2";
           
           return (
             <div key={img.id} className={spanClass}>
-              {/* Moldura auxiliar invisível para manter o espaço quando o overflow é visível */}
               {isActive && (
                 <div className="absolute inset-0 border-4 border-black/20 pointer-events-none z-10 shadow-[0_0_0_100vmax_rgba(255,255,255,0.7)]"></div>
               )}
@@ -188,15 +186,12 @@ export default function App() {
               <img 
                 src={img.url} 
                 alt={`Panel ${i+1}`} 
-                className={`w-full h-full object-contain grayscale contrast-125 transition-transform duration-75 origin-center ${isActive ? 'opacity-100' : 'opacity-100'}`} 
+                className={`w-full h-full object-contain grayscale contrast-125 transition-transform duration-75 origin-center`} 
                 style={{
-                  transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`,
-                  filter: isActive ? 'grayscale(1) contrast(1.25)' : 'grayscale(1) contrast(1.25)'
+                  transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`
                 }}
               />
-              <div className="absolute top-2 left-2 bg-black text-white text-[8px] px-2 py-0.5 font-black uppercase italic z-20">
-                P-0{i+1}
-              </div>
+              {/* Etiqueta P-0X removida conforme solicitado pelo usuário */}
             </div>
           );
         })}
