@@ -165,32 +165,32 @@ export default function App() {
     const count = sourceImages.length;
     if (count === 0) return null;
 
-    // Permitir overflow-visible na grade e na página quando um quadro está sendo ajustado
-    let gridClass = `grid gap-2 bg-black p-2 border-4 border-black transition-all ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`;
-    if (count === 1) gridClass += " grid-cols-1 h-full";
-    if (count === 2) gridClass += " grid-cols-1 grid-rows-2 h-full";
-    if (count === 3 || count === 4) gridClass += " grid-cols-2 grid-rows-2 h-full";
+    // A grade sempre mantém overflow: visible se algo estiver sendo editado para evitar cortes visuais
+    let gridClass = `grid gap-3 bg-black p-3 border-4 border-black h-full w-full transition-all ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`;
+    
+    if (count === 1) gridClass += " grid-cols-1";
+    else if (count === 2) gridClass += " grid-cols-1 grid-rows-2";
+    else if (count === 3) gridClass += " grid-cols-2 grid-rows-2";
+    else if (count === 4) gridClass += " grid-cols-2 grid-rows-2";
 
     return (
-      <div className={gridClass} style={{ aspectRatio: '1 / 1.4' }}>
+      <div className={gridClass} style={{ minHeight: '100%' }}>
         {sourceImages.map((img, i) => {
           const isActive = activePanelIdx === i;
-          let spanClass = `relative bg-white transition-all ${isActive ? 'z-40 overflow-visible ring-4 ring-black shadow-[0_0_30px_rgba(0,0,0,0.3)]' : 'overflow-hidden'}`;
+          let spanClass = `relative bg-white transition-all ${isActive ? 'z-50 overflow-visible ring-4 ring-black shadow-2xl' : 'overflow-hidden'}`;
           
-          // Layout específico para 2 imagens
-          if (count === 2) spanClass += " h-full";
           if (count === 3 && i === 0) spanClass += " col-span-2";
           
           return (
             <div key={img.id} className={spanClass}>
               {isActive && (
-                <div className="absolute inset-0 border-4 border-black/20 pointer-events-none z-10"></div>
+                <div className="absolute inset-0 border-2 border-black/30 pointer-events-none z-10 bg-white/10"></div>
               )}
               
               <img 
                 src={img.url} 
-                alt={`Panel`} 
-                className="w-full h-full object-contain grayscale contrast-125 transition-transform duration-75 origin-center pointer-events-none" 
+                alt="Manga Panel" 
+                className="w-full h-full object-cover grayscale contrast-125 transition-transform duration-75 origin-center pointer-events-none" 
                 style={{
                   transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`
                 }}
@@ -216,26 +216,26 @@ export default function App() {
             <div className="flex justify-between items-center border-b-4 border-black pb-2">
               <h2 className="text-xl font-black uppercase italic tracking-tighter">Manga Composer</h2>
               <div className="flex gap-2">
-                <button onClick={() => fileInputRef.current?.click()} className="bg-black text-white px-3 py-1 text-[10px] font-black uppercase">+ Quadros</button>
+                <button onClick={() => fileInputRef.current?.click()} className="bg-black text-white px-3 py-1 text-[10px] font-black uppercase">+ Adicionar</button>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" multiple />
               </div>
             </div>
 
-            {/* GESTÃO DE QUADROS CARREGADOS E TRANSFORMAÇÃO */}
+            {/* GESTÃO DE CENAS */}
             <div className="space-y-4">
               <h3 className="text-xs font-black uppercase border-b-2 border-gray-100 pb-1 flex items-center gap-2">
-                <i className="fa-solid fa-layer-group"></i> Configuração de Cenas
+                <i className="fa-solid fa-images"></i> Painéis da Página
               </h3>
               <div className="grid grid-cols-1 gap-4">
                 {sourceImages.map((img, i) => (
-                  <div key={img.id} className={`border-2 p-2 bg-gray-50 transition-colors ${activePanelIdx === i ? 'border-black bg-white shadow-[4px_4px_0_black]' : 'border-gray-200'}`}>
+                  <div key={img.id} className={`border-2 p-3 bg-gray-50 transition-colors ${activePanelIdx === i ? 'border-black bg-white shadow-[6px_6px_0_black]' : 'border-gray-200'}`}>
                     <div className="flex gap-3 mb-2">
                       <div className="relative w-16 h-16 border-2 border-black flex-shrink-0 overflow-hidden bg-white">
-                        <img src={img.url} className="w-full h-full object-contain grayscale" />
+                        <img src={img.url} className="w-full h-full object-cover grayscale" />
                       </div>
                       <div className="flex-grow space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase italic">Editar Cena</span>
+                          <span className="text-[10px] font-black uppercase italic">Cena {i+1}</span>
                           <div className="flex gap-2">
                             <button 
                               onClick={() => setActivePanelIdx(activePanelIdx === i ? null : i)}
@@ -249,14 +249,14 @@ export default function App() {
                           </div>
                         </div>
                         {activePanelIdx === i && (
-                          <div className="space-y-3 pt-3 animate-in slide-in-from-top-1 duration-200 border-t border-gray-200 mt-2">
+                          <div className="space-y-4 pt-3 animate-in slide-in-from-top-1 duration-200 border-t border-gray-200 mt-2">
                             <div className="space-y-1">
-                              <div className="flex justify-between text-[8px] font-black uppercase italic">
-                                <span>Zoom / Escala</span>
+                              <div className="flex justify-between text-[9px] font-black uppercase italic">
+                                <span>Zoom</span>
                                 <span>{img.zoom.toFixed(1)}x</span>
                               </div>
                               <input 
-                                type="range" min="0.1" max="5" step="0.1" 
+                                type="range" min="0.5" max="4" step="0.1" 
                                 value={img.zoom} 
                                 onChange={e => updateImageTransform(img.id, 'zoom', parseFloat(e.target.value))} 
                                 className="w-full h-1 accent-black"
@@ -264,27 +264,27 @@ export default function App() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-1">
-                                <span className="text-[8px] font-black uppercase italic block text-center">Eixo X</span>
+                                <span className="text-[9px] font-black uppercase italic block text-center">Horizontal</span>
                                 <input 
-                                  type="range" min="-150" max="150" step="1" 
+                                  type="range" min="-200" max="200" step="1" 
                                   value={img.offsetX} 
                                   onChange={e => updateImageTransform(img.id, 'offsetX', parseInt(e.target.value))} 
                                   className="w-full h-1 accent-black"
                                 />
                               </div>
                               <div className="space-y-1">
-                                <span className="text-[8px] font-black uppercase italic block text-center">Eixo Y</span>
+                                <span className="text-[9px] font-black uppercase italic block text-center">Vertical</span>
                                 <input 
-                                  type="range" min="-150" max="150" step="1" 
+                                  type="range" min="-200" max="200" step="1" 
                                   value={img.offsetY} 
                                   onChange={e => updateImageTransform(img.id, 'offsetY', parseInt(e.target.value))} 
                                   className="w-full h-1 accent-black"
                                 />
                               </div>
                             </div>
-                            <div className="bg-blue-50 p-2 text-[7px] font-bold border border-blue-200 rounded text-blue-800">
-                              <i className="fa-solid fa-circle-check mr-1"></i>
-                              AJUSTE DE OFFSET: A imagem pode ser movida livremente sem cortes pelo quadro durante a edição.
+                            <div className="bg-blue-50 p-2 text-[8px] font-bold border border-blue-200 rounded text-blue-900 leading-tight">
+                              <i className="fa-solid fa-arrows-up-down-left-right mr-1"></i>
+                              ENQUADRAMENTO: Use os controles para posicionar a imagem. O corte visual foi removido durante o ajuste para facilitar.
                             </div>
                           </div>
                         )}
@@ -295,9 +295,9 @@ export default function App() {
                 {sourceImages.length < 4 && (
                   <button 
                     onClick={() => fileInputRef.current?.click()}
-                    className="h-12 border-2 border-dashed border-gray-300 flex items-center justify-center gap-2 cursor-pointer hover:border-black hover:text-black text-gray-400 transition-all font-black text-xs uppercase"
+                    className="h-16 border-2 border-dashed border-gray-300 flex items-center justify-center gap-2 cursor-pointer hover:border-black hover:text-black text-gray-400 transition-all font-black text-xs uppercase"
                   >
-                    <i className="fa-solid fa-plus"></i> Adicionar Quadro
+                    <i className="fa-solid fa-plus-circle"></i> Novo Painel
                   </button>
                 )}
               </div>
@@ -338,11 +338,11 @@ export default function App() {
 
                       <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-100">
                          <div className="flex flex-col gap-1">
-                            <span className="text-[6px] font-bold uppercase opacity-50">Posição X</span>
+                            <span className="text-[6px] font-bold uppercase opacity-50 text-center">Posição X</span>
                             <input type="range" min="0" max="100" value={s.position.x} onChange={e => updatePosition(i, parseInt(e.target.value), s.position.y)} className="w-full h-1 accent-black" />
                          </div>
                          <div className="flex flex-col gap-1">
-                            <span className="text-[6px] font-bold uppercase opacity-50">Posição Y</span>
+                            <span className="text-[6px] font-bold uppercase opacity-50 text-center">Posição Y</span>
                             <input type="range" min="0" max="100" value={s.position.y} onChange={e => updatePosition(i, s.position.x, parseInt(e.target.value))} className="w-full h-1 accent-black" />
                          </div>
                       </div>
@@ -356,28 +356,27 @@ export default function App() {
 
         {/* ÁREA DA FOLHA DE MANGÁ */}
         <div className="lg:col-span-8 flex flex-col items-center">
-          {/* Ajustado overflow-visible no container pai quando editando para evitar clipping visual */}
-          <div className={`manga-panel bg-white p-6 min-h-[850px] w-full max-w-[700px] relative halftone-bg flex flex-col border-4 border-black ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
-            <div ref={exportRef} className="relative flex-grow bg-white w-full h-full flex flex-col overflow-hidden">
+          <div className={`manga-panel bg-white p-8 min-h-[900px] w-full max-w-[750px] relative halftone-bg flex flex-col border-4 border-black transition-all ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
+            <div ref={exportRef} className={`relative flex-grow bg-white w-full h-full flex flex-col ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
               {generation.isAnalyzing && (
-                <div className="absolute inset-0 z-50 bg-white/95 flex flex-col items-center justify-center font-black uppercase italic animate-pulse">
+                <div className="absolute inset-0 z-[100] bg-white/95 flex flex-col items-center justify-center font-black uppercase italic animate-pulse">
                   <i className="fa-solid fa-wand-magic-sparkles text-3xl mb-4"></i>
-                  Processando Página...
+                  Organizando Página...
                 </div>
               )}
               
               {sourceImages.length === 0 ? (
-                <div className="flex-grow flex flex-col items-center justify-center opacity-20 select-none border-4 border-dashed border-black m-4">
-                  <i className="fa-solid fa-layer-group text-8xl mb-6"></i>
-                  <p className="text-2xl font-black uppercase italic tracking-tighter">Página em Branco</p>
-                  <p className="text-[10px] font-bold tracking-[0.4em] mt-2">ADICIONE ATÉ 4 CENAS</p>
+                <div className="flex-grow flex flex-col items-center justify-center opacity-10 select-none border-4 border-dashed border-black m-4">
+                  <i className="fa-solid fa-layer-group text-9xl mb-6"></i>
+                  <p className="text-3xl font-black uppercase italic tracking-tighter">Seven Mangá</p>
+                  <p className="text-[12px] font-bold tracking-[0.5em] mt-2">ADICIONE SUAS ARTES</p>
                 </div>
               ) : (
-                <div className={`relative flex-grow shadow-inner bg-white border-2 border-black h-full ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
+                <div className={`relative flex-grow bg-white border-2 border-black h-full ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
                   {renderMangaGrid()}
                   
                   {/* CAMADA DE BALÕES */}
-                  <div className="absolute inset-0 pointer-events-none z-50">
+                  <div className="absolute inset-0 pointer-events-none z-[60]">
                     {generation.suggestions.map((s, idx) => {
                       const rad = (s.tailAngle - 90) * (Math.PI / 180);
                       const cosA = Math.cos(rad);
@@ -416,9 +415,9 @@ export default function App() {
           </div>
           
           {sourceImages.length > 0 && (
-            <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-[700px]">
-              <button onClick={() => { setSourceImages([]); setActivePanelIdx(null); }} className="py-4 bg-white border-4 border-black font-black uppercase italic tracking-widest hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_#000]">Limpar Tudo</button>
-              <button onClick={handleDownload} disabled={isExporting} className="py-4 bg-black text-white border-4 border-black font-black uppercase italic tracking-widest shadow-[8px_8px_0px_#ccc] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center justify-center gap-2">
+            <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-[750px]">
+              <button onClick={() => { setSourceImages([]); setActivePanelIdx(null); }} className="py-4 bg-white border-4 border-black font-black uppercase italic tracking-widest hover:bg-black hover:text-white transition-all shadow-[6px_6px_0px_#000]">Limpar Tudo</button>
+              <button onClick={handleDownload} disabled={isExporting} className="py-4 bg-black text-white border-4 border-black font-black uppercase italic tracking-widest shadow-[10px_10px_0px_#ccc] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center justify-center gap-2">
                 {isExporting ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-file-export"></i>}
                 Exportar Mangá
               </button>
