@@ -165,31 +165,32 @@ export default function App() {
     const count = sourceImages.length;
     if (count === 0) return null;
 
-    // Removemos o overflow-hidden da grade principal para permitir que o Bleed Preview funcione corretamente
-    let gridClass = `grid gap-2 bg-black p-2 border-4 border-black ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`;
+    // Permitir overflow-visible na grade e na página quando um quadro está sendo ajustado
+    let gridClass = `grid gap-2 bg-black p-2 border-4 border-black transition-all ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`;
     if (count === 1) gridClass += " grid-cols-1 h-full";
-    if (count === 2) gridClass += " grid-cols-1 grid-rows-2 h-full flex flex-col";
+    if (count === 2) gridClass += " grid-cols-1 grid-rows-2 h-full";
     if (count === 3 || count === 4) gridClass += " grid-cols-2 grid-rows-2 h-full";
 
     return (
       <div className={gridClass} style={{ aspectRatio: '1 / 1.4' }}>
         {sourceImages.map((img, i) => {
           const isActive = activePanelIdx === i;
-          // Estilo base para cada quadro. Para 2 imagens, garantimos que ocupem metades iguais.
-          let spanClass = `relative bg-white transition-all ${isActive ? 'z-40 overflow-visible ring-4 ring-black' : 'overflow-hidden'}`;
-          if (count === 2) spanClass += " flex-grow h-1/2";
+          let spanClass = `relative bg-white transition-all ${isActive ? 'z-40 overflow-visible ring-4 ring-black shadow-[0_0_30px_rgba(0,0,0,0.3)]' : 'overflow-hidden'}`;
+          
+          // Layout específico para 2 imagens
+          if (count === 2) spanClass += " h-full";
           if (count === 3 && i === 0) spanClass += " col-span-2";
           
           return (
             <div key={img.id} className={spanClass}>
               {isActive && (
-                <div className="absolute inset-0 border-4 border-black/40 pointer-events-none z-10 shadow-[0_0_0_200vmax_rgba(255,255,255,0.7)]"></div>
+                <div className="absolute inset-0 border-4 border-black/20 pointer-events-none z-10"></div>
               )}
               
               <img 
                 src={img.url} 
                 alt={`Panel`} 
-                className={`w-full h-full object-contain grayscale contrast-125 transition-transform duration-75 origin-center`} 
+                className="w-full h-full object-contain grayscale contrast-125 transition-transform duration-75 origin-center pointer-events-none" 
                 style={{
                   transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`
                 }}
@@ -223,19 +224,18 @@ export default function App() {
             {/* GESTÃO DE QUADROS CARREGADOS E TRANSFORMAÇÃO */}
             <div className="space-y-4">
               <h3 className="text-xs font-black uppercase border-b-2 border-gray-100 pb-1 flex items-center gap-2">
-                <i className="fa-solid fa-layer-group"></i> Quadros da Página
+                <i className="fa-solid fa-layer-group"></i> Configuração de Cenas
               </h3>
               <div className="grid grid-cols-1 gap-4">
                 {sourceImages.map((img, i) => (
-                  <div key={img.id} className={`border-2 p-2 bg-gray-50 transition-colors ${activePanelIdx === i ? 'border-black bg-white shadow-[2px_2px_0_black]' : 'border-gray-200'}`}>
+                  <div key={img.id} className={`border-2 p-2 bg-gray-50 transition-colors ${activePanelIdx === i ? 'border-black bg-white shadow-[4px_4px_0_black]' : 'border-gray-200'}`}>
                     <div className="flex gap-3 mb-2">
                       <div className="relative w-16 h-16 border-2 border-black flex-shrink-0 overflow-hidden bg-white">
                         <img src={img.url} className="w-full h-full object-contain grayscale" />
-                        {/* Numeração removida da miniatura conforme solicitado */}
                       </div>
                       <div className="flex-grow space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase italic">Cena Selecionada</span>
+                          <span className="text-[10px] font-black uppercase italic">Editar Cena</span>
                           <div className="flex gap-2">
                             <button 
                               onClick={() => setActivePanelIdx(activePanelIdx === i ? null : i)}
@@ -264,18 +264,18 @@ export default function App() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-1">
-                                <span className="text-[8px] font-black uppercase italic block">Mover Horizontal</span>
+                                <span className="text-[8px] font-black uppercase italic block text-center">Eixo X</span>
                                 <input 
-                                  type="range" min="-100" max="100" step="1" 
+                                  type="range" min="-150" max="150" step="1" 
                                   value={img.offsetX} 
                                   onChange={e => updateImageTransform(img.id, 'offsetX', parseInt(e.target.value))} 
                                   className="w-full h-1 accent-black"
                                 />
                               </div>
                               <div className="space-y-1">
-                                <span className="text-[8px] font-black uppercase italic block">Mover Vertical</span>
+                                <span className="text-[8px] font-black uppercase italic block text-center">Eixo Y</span>
                                 <input 
-                                  type="range" min="-100" max="100" step="1" 
+                                  type="range" min="-150" max="150" step="1" 
                                   value={img.offsetY} 
                                   onChange={e => updateImageTransform(img.id, 'offsetY', parseInt(e.target.value))} 
                                   className="w-full h-1 accent-black"
@@ -283,8 +283,8 @@ export default function App() {
                               </div>
                             </div>
                             <div className="bg-blue-50 p-2 text-[7px] font-bold border border-blue-200 rounded text-blue-800">
-                              <i className="fa-solid fa-eye mr-1"></i>
-                              AJUSTE LIVRE: O corte foi desativado. Mova a imagem livremente para posicioná-la no quadro.
+                              <i className="fa-solid fa-circle-check mr-1"></i>
+                              AJUSTE DE OFFSET: A imagem pode ser movida livremente sem cortes pelo quadro durante a edição.
                             </div>
                           </div>
                         )}
@@ -356,69 +356,71 @@ export default function App() {
 
         {/* ÁREA DA FOLHA DE MANGÁ */}
         <div className="lg:col-span-8 flex flex-col items-center">
-          {/* O overflow-hidden aqui é condicional para permitir o Bleed Preview sem cortes da página */}
-          <div ref={exportRef} className={`manga-panel bg-white p-6 min-h-[850px] w-full max-w-[700px] relative halftone-bg flex flex-col border-4 border-black ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
-            {generation.isAnalyzing && (
-              <div className="absolute inset-0 z-50 bg-white/95 flex flex-col items-center justify-center font-black uppercase italic animate-pulse">
-                <i className="fa-solid fa-wand-magic-sparkles text-3xl mb-4"></i>
-                Analisando Composição...
-              </div>
-            )}
-            
-            {sourceImages.length === 0 ? (
-              <div className="flex-grow flex flex-col items-center justify-center opacity-20 select-none border-4 border-dashed border-black m-4">
-                <i className="fa-solid fa-layer-group text-8xl mb-6"></i>
-                <p className="text-2xl font-black uppercase italic tracking-tighter">Página de Mangá</p>
-                <p className="text-[10px] font-bold tracking-[0.4em] mt-2">ADICIONE SUAS CENAS</p>
-              </div>
-            ) : (
-              <div className={`relative flex-grow shadow-2xl bg-white border-2 border-black ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
-                {renderMangaGrid()}
-                
-                {/* CAMADA DE BALÕES */}
-                <div className="absolute inset-0 pointer-events-none z-50">
-                  {generation.suggestions.map((s, idx) => {
-                    const rad = (s.tailAngle - 90) * (Math.PI / 180);
-                    const cosA = Math.cos(rad);
-                    const sinA = Math.sin(rad);
-                    const scale = s.bubbleScale || 35;
-                    
-                    return (
-                      <div key={idx} className="absolute transform -translate-x-1/2 -translate-y-1/2" style={{ left: `${s.position.x}%`, top: `${s.position.y}%`, width: `${scale}%`, zIndex: 200 + idx }}>
-                        <div className={getFilter(s.bubbleType)}>
-                          {s.bubbleType !== 'narrative' && s.tailLength > 0 && (
-                            <div className="absolute pointer-events-none" style={{ left: `calc(50% + ${cosA * 55}%)`, top: `calc(50% + ${sinA * 55}%)`, transform: `translate(-50%, -50%) rotate(${s.tailAngle}deg)` }}>
-                              {s.bubbleType === 'thought' ? (
-                                <div className="flex flex-col gap-2 items-center">
-                                  <div className="w-6 h-6 rounded-full border-[3px] border-black bg-white shadow-[2px_2px_0_black]"></div>
-                                  <div className="w-3 h-3 rounded-full border-[2px] border-black bg-white shadow-[1px_1px_0_black]"></div>
-                                </div>
-                              ) : (
-                                <div className="relative flex flex-col items-center">
-                                  <div className="w-0 h-0 border-l-[18px] border-l-transparent border-r-[18px] border-r-transparent border-t-black" style={{ borderTopWidth: `${s.tailLength}px`, marginTop: '-4px' }}></div>
-                                  <div className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[13px] border-l-transparent border-r-[13px] border-r-transparent border-t-white" style={{ borderTopWidth: `${s.tailLength - 6}px` }}></div>
-                                </div>
-                              )}
+          {/* Ajustado overflow-visible no container pai quando editando para evitar clipping visual */}
+          <div className={`manga-panel bg-white p-6 min-h-[850px] w-full max-w-[700px] relative halftone-bg flex flex-col border-4 border-black ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
+            <div ref={exportRef} className="relative flex-grow bg-white w-full h-full flex flex-col overflow-hidden">
+              {generation.isAnalyzing && (
+                <div className="absolute inset-0 z-50 bg-white/95 flex flex-col items-center justify-center font-black uppercase italic animate-pulse">
+                  <i className="fa-solid fa-wand-magic-sparkles text-3xl mb-4"></i>
+                  Processando Página...
+                </div>
+              )}
+              
+              {sourceImages.length === 0 ? (
+                <div className="flex-grow flex flex-col items-center justify-center opacity-20 select-none border-4 border-dashed border-black m-4">
+                  <i className="fa-solid fa-layer-group text-8xl mb-6"></i>
+                  <p className="text-2xl font-black uppercase italic tracking-tighter">Página em Branco</p>
+                  <p className="text-[10px] font-bold tracking-[0.4em] mt-2">ADICIONE ATÉ 4 CENAS</p>
+                </div>
+              ) : (
+                <div className={`relative flex-grow shadow-inner bg-white border-2 border-black h-full ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
+                  {renderMangaGrid()}
+                  
+                  {/* CAMADA DE BALÕES */}
+                  <div className="absolute inset-0 pointer-events-none z-50">
+                    {generation.suggestions.map((s, idx) => {
+                      const rad = (s.tailAngle - 90) * (Math.PI / 180);
+                      const cosA = Math.cos(rad);
+                      const sinA = Math.sin(rad);
+                      const scale = s.bubbleScale || 35;
+                      
+                      return (
+                        <div key={idx} className="absolute transform -translate-x-1/2 -translate-y-1/2" style={{ left: `${s.position.x}%`, top: `${s.position.y}%`, width: `${scale}%`, zIndex: 200 + idx }}>
+                          <div className={getFilter(s.bubbleType)}>
+                            {s.bubbleType !== 'narrative' && s.tailLength > 0 && (
+                              <div className="absolute pointer-events-none" style={{ left: `calc(50% + ${cosA * 55}%)`, top: `calc(50% + ${sinA * 55}%)`, transform: `translate(-50%, -50%) rotate(${s.tailAngle}deg)` }}>
+                                {s.bubbleType === 'thought' ? (
+                                  <div className="flex flex-col gap-2 items-center">
+                                    <div className="w-6 h-6 rounded-full border-[3px] border-black bg-white shadow-[2px_2px_0_black]"></div>
+                                    <div className="w-3 h-3 rounded-full border-[2px] border-black bg-white shadow-[1px_1px_0_black]"></div>
+                                  </div>
+                                ) : (
+                                  <div className="relative flex flex-col items-center">
+                                    <div className="w-0 h-0 border-l-[18px] border-l-transparent border-r-[18px] border-r-transparent border-t-black" style={{ borderTopWidth: `${s.tailLength}px`, marginTop: '-4px' }}></div>
+                                    <div className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[13px] border-l-transparent border-r-[13px] border-r-transparent border-t-white" style={{ borderTopWidth: `${s.tailLength - 6}px` }}></div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            <div className={getBubbleStyles(s.bubbleType)}>
+                              <p className="text-black font-black text-center leading-tight select-none uppercase tracking-tighter" style={{ fontSize: `${s.fontSize || 16}px`, fontFamily: 'Noto Sans JP' }}>{s.suggestedDialogue}</p>
                             </div>
-                          )}
-                          <div className={getBubbleStyles(s.bubbleType)}>
-                            <p className="text-black font-black text-center leading-tight select-none uppercase tracking-tighter" style={{ fontSize: `${s.fontSize || 16}px`, fontFamily: 'Noto Sans JP' }}>{s.suggestedDialogue}</p>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
           
           {sourceImages.length > 0 && (
             <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-[700px]">
-              <button onClick={() => { setSourceImages([]); setActivePanelIdx(null); }} className="py-4 bg-white border-4 border-black font-black uppercase italic tracking-widest hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_#000]">Limpar Página</button>
+              <button onClick={() => { setSourceImages([]); setActivePanelIdx(null); }} className="py-4 bg-white border-4 border-black font-black uppercase italic tracking-widest hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_#000]">Limpar Tudo</button>
               <button onClick={handleDownload} disabled={isExporting} className="py-4 bg-black text-white border-4 border-black font-black uppercase italic tracking-widest shadow-[8px_8px_0px_#ccc] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center justify-center gap-2">
                 {isExporting ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-file-export"></i>}
-                Exportar HQ
+                Exportar Mangá
               </button>
             </div>
           )}
