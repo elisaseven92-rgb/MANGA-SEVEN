@@ -98,6 +98,9 @@ export default function App() {
   const handleDownload = async () => {
     if (!exportRef.current) return;
     setIsExporting(true);
+    const originalActive = activePanelIdx;
+    setActivePanelIdx(null); // Fecha o modo de ajuste para garantir o overflow-hidden na exportação
+    
     try {
       await new Promise(r => setTimeout(r, 600));
       const dataUrl = await toPng(exportRef.current, { 
@@ -111,6 +114,7 @@ export default function App() {
       link.click();
     } finally {
       setIsExporting(false);
+      setActivePanelIdx(originalActive);
     }
   };
 
@@ -169,20 +173,28 @@ export default function App() {
     return (
       <div className={gridClass} style={{ aspectRatio: '1 / 1.4' }}>
         {sourceImages.map((img, i) => {
-          let spanClass = `relative bg-white overflow-hidden transition-all ${activePanelIdx === i ? 'ring-4 ring-inset ring-black' : ''}`;
+          const isActive = activePanelIdx === i;
+          // Se o quadro estiver ativo, removemos o overflow-hidden para que o usuário veja a imagem sem cortes durante o ajuste
+          let spanClass = `relative bg-white transition-all ${isActive ? 'z-40 overflow-visible ring-4 ring-black' : 'overflow-hidden'}`;
           if (count === 3 && i === 0) spanClass += " col-span-2";
           
           return (
             <div key={img.id} className={spanClass}>
+              {/* Moldura auxiliar invisível para manter o espaço quando o overflow é visível */}
+              {isActive && (
+                <div className="absolute inset-0 border-4 border-black/20 pointer-events-none z-10 shadow-[0_0_0_100vmax_rgba(255,255,255,0.7)]"></div>
+              )}
+              
               <img 
                 src={img.url} 
                 alt={`Panel ${i+1}`} 
-                className="w-full h-full object-contain grayscale contrast-125 transition-transform duration-75 origin-center" 
+                className={`w-full h-full object-contain grayscale contrast-125 transition-transform duration-75 origin-center ${isActive ? 'opacity-100' : 'opacity-100'}`} 
                 style={{
-                  transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`
+                  transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`,
+                  filter: isActive ? 'grayscale(1) contrast(1.25)' : 'grayscale(1) contrast(1.25)'
                 }}
               />
-              <div className="absolute top-2 left-2 bg-black text-white text-[8px] px-2 py-0.5 font-black uppercase italic z-10">
+              <div className="absolute top-2 left-2 bg-black text-white text-[8px] px-2 py-0.5 font-black uppercase italic z-20">
                 P-0{i+1}
               </div>
             </div>
@@ -255,7 +267,7 @@ export default function App() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-1">
-                                <span className="text-[8px] font-black uppercase italic block">Posição X</span>
+                                <span className="text-[8px] font-black uppercase italic block">Mover Horizontal</span>
                                 <input 
                                   type="range" min="-100" max="100" step="1" 
                                   value={img.offsetX} 
@@ -264,7 +276,7 @@ export default function App() {
                                 />
                               </div>
                               <div className="space-y-1">
-                                <span className="text-[8px] font-black uppercase italic block">Posição Y</span>
+                                <span className="text-[8px] font-black uppercase italic block">Mover Vertical</span>
                                 <input 
                                   type="range" min="-100" max="100" step="1" 
                                   value={img.offsetY} 
@@ -273,9 +285,9 @@ export default function App() {
                                 />
                               </div>
                             </div>
-                            <div className="bg-yellow-50 p-2 text-[7px] font-bold border border-yellow-200 rounded">
-                              <i className="fa-solid fa-info-circle mr-1"></i>
-                              Ajuste manual: A imagem agora é exibida por inteiro (object-contain). Use o zoom para preencher o quadro conforme desejar.
+                            <div className="bg-blue-50 p-2 text-[7px] font-bold border border-blue-200 rounded text-blue-800">
+                              <i className="fa-solid fa-eye mr-1"></i>
+                              MODO PREVIEW: O corte foi desativado temporariamente para você ver a imagem inteira enquanto ajusta.
                             </div>
                           </div>
                         )}
@@ -366,7 +378,7 @@ export default function App() {
                 {renderMangaGrid()}
                 
                 {/* CAMADA DE BALÕES */}
-                <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute inset-0 pointer-events-none z-50">
                   {generation.suggestions.map((s, idx) => {
                     const rad = (s.tailAngle - 90) * (Math.PI / 180);
                     const cosA = Math.cos(rad);
