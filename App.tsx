@@ -24,7 +24,6 @@ export default function App() {
     const files = e.target.files;
     if (files) {
       const newImages: MangaImage[] = [];
-      // Fix: Cast the array from FileList to File[] explicitly to resolve type inference issues.
       const filesArray = Array.from(files).slice(0, 4 - sourceImages.length) as File[];
 
       for (const file of filesArray) {
@@ -170,7 +169,7 @@ export default function App() {
     return (
       <div className={gridClass} style={{ aspectRatio: '1 / 1.4' }}>
         {sourceImages.map((img, i) => {
-          let spanClass = "relative bg-white overflow-hidden";
+          let spanClass = `relative bg-white overflow-hidden transition-all ${activePanelIdx === i ? 'ring-4 ring-inset ring-black' : ''}`;
           if (count === 3 && i === 0) spanClass += " col-span-2";
           
           return (
@@ -178,7 +177,7 @@ export default function App() {
               <img 
                 src={img.url} 
                 alt={`Panel ${i+1}`} 
-                className="w-full h-full object-cover grayscale contrast-125 transition-transform duration-75 origin-center" 
+                className="w-full h-full object-contain grayscale contrast-125 transition-transform duration-75 origin-center" 
                 style={{
                   transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`
                 }}
@@ -195,6 +194,7 @@ export default function App() {
 
   const removeImage = (id: string) => {
     setSourceImages(prev => prev.filter(img => img.id !== id));
+    setActivePanelIdx(null);
   };
 
   return (
@@ -218,10 +218,10 @@ export default function App() {
               </h3>
               <div className="grid grid-cols-1 gap-4">
                 {sourceImages.map((img, i) => (
-                  <div key={img.id} className={`border-2 p-2 bg-gray-50 transition-colors ${activePanelIdx === i ? 'border-black' : 'border-gray-200'}`}>
+                  <div key={img.id} className={`border-2 p-2 bg-gray-50 transition-colors ${activePanelIdx === i ? 'border-black bg-white shadow-[2px_2px_0_black]' : 'border-gray-200'}`}>
                     <div className="flex gap-3 mb-2">
-                      <div className="relative w-16 h-16 border-2 border-black flex-shrink-0 overflow-hidden">
-                        <img src={img.url} className="w-full h-full object-cover grayscale" />
+                      <div className="relative w-16 h-16 border-2 border-black flex-shrink-0 overflow-hidden bg-white">
+                        <img src={img.url} className="w-full h-full object-contain grayscale" />
                         <div className="absolute bottom-0 left-0 bg-black text-white text-[8px] px-1 font-bold">Q{i+1}</div>
                       </div>
                       <div className="flex-grow space-y-1">
@@ -230,45 +230,52 @@ export default function App() {
                           <div className="flex gap-2">
                             <button 
                               onClick={() => setActivePanelIdx(activePanelIdx === i ? null : i)}
-                              className={`text-[9px] px-2 py-0.5 border border-black font-bold uppercase transition-colors ${activePanelIdx === i ? 'bg-black text-white' : 'bg-white text-black'}`}
+                              className={`text-[9px] px-2 py-0.5 border-2 border-black font-black uppercase transition-all ${activePanelIdx === i ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}
                             >
-                              {activePanelIdx === i ? 'Fechar' : 'Ajustar'}
+                              {activePanelIdx === i ? 'Concluir' : 'Ajustar'}
                             </button>
-                            <button onClick={() => removeImage(img.id)} className="text-red-600 hover:scale-110 transition-transform">
+                            <button onClick={() => removeImage(img.id)} className="text-red-600 hover:scale-110 transition-transform p-1">
                               <i className="fa-solid fa-trash-can text-xs"></i>
                             </button>
                           </div>
                         </div>
-                        {/* CONTROLES DE ZOOM E PAN (Aparecem apenas se ativo) */}
                         {activePanelIdx === i && (
-                          <div className="space-y-2 pt-2 animate-in slide-in-from-top-1 duration-200">
-                            <div className="flex items-center gap-2">
-                              <i className="fa-solid fa-magnifying-glass-plus text-[10px]"></i>
+                          <div className="space-y-3 pt-3 animate-in slide-in-from-top-1 duration-200 border-t border-gray-200 mt-2">
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[8px] font-black uppercase italic">
+                                <span>Zoom / Escala</span>
+                                <span>{img.zoom.toFixed(1)}x</span>
+                              </div>
                               <input 
-                                type="range" min="1" max="5" step="0.1" 
+                                type="range" min="0.1" max="5" step="0.1" 
                                 value={img.zoom} 
                                 onChange={e => updateImageTransform(img.id, 'zoom', parseFloat(e.target.value))} 
-                                className="flex-grow h-1 accent-black"
-                              />
-                              <span className="text-[8px] font-bold w-6">{img.zoom.toFixed(1)}x</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <i className="fa-solid fa-arrows-left-right text-[10px]"></i>
-                              <input 
-                                type="range" min="-100" max="100" step="1" 
-                                value={img.offsetX} 
-                                onChange={e => updateImageTransform(img.id, 'offsetX', parseInt(e.target.value))} 
-                                className="flex-grow h-1 accent-black"
+                                className="w-full h-1 accent-black"
                               />
                             </div>
-                            <div className="flex items-center gap-2">
-                              <i className="fa-solid fa-arrows-up-down text-[10px]"></i>
-                              <input 
-                                type="range" min="-100" max="100" step="1" 
-                                value={img.offsetY} 
-                                onChange={e => updateImageTransform(img.id, 'offsetY', parseInt(e.target.value))} 
-                                className="flex-grow h-1 accent-black"
-                              />
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <span className="text-[8px] font-black uppercase italic block">Posição X</span>
+                                <input 
+                                  type="range" min="-100" max="100" step="1" 
+                                  value={img.offsetX} 
+                                  onChange={e => updateImageTransform(img.id, 'offsetX', parseInt(e.target.value))} 
+                                  className="w-full h-1 accent-black"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-[8px] font-black uppercase italic block">Posição Y</span>
+                                <input 
+                                  type="range" min="-100" max="100" step="1" 
+                                  value={img.offsetY} 
+                                  onChange={e => updateImageTransform(img.id, 'offsetY', parseInt(e.target.value))} 
+                                  className="w-full h-1 accent-black"
+                                />
+                              </div>
+                            </div>
+                            <div className="bg-yellow-50 p-2 text-[7px] font-bold border border-yellow-200 rounded">
+                              <i className="fa-solid fa-info-circle mr-1"></i>
+                              Ajuste manual: A imagem agora é exibida por inteiro (object-contain). Use o zoom para preencher o quadro conforme desejar.
                             </div>
                           </div>
                         )}
@@ -344,7 +351,7 @@ export default function App() {
             {generation.isAnalyzing && (
               <div className="absolute inset-0 z-50 bg-white/95 flex flex-col items-center justify-center font-black uppercase italic animate-pulse">
                 <i className="fa-solid fa-wand-magic-sparkles text-3xl mb-4"></i>
-                Organizando Páginas...
+                Analisando Composição...
               </div>
             )}
             
@@ -398,7 +405,7 @@ export default function App() {
           
           {sourceImages.length > 0 && (
             <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-[700px]">
-              <button onClick={() => setSourceImages([])} className="py-4 bg-white border-4 border-black font-black uppercase italic tracking-widest hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_#000]">Limpar Página</button>
+              <button onClick={() => { setSourceImages([]); setActivePanelIdx(null); }} className="py-4 bg-white border-4 border-black font-black uppercase italic tracking-widest hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_#000]">Limpar Página</button>
               <button onClick={handleDownload} disabled={isExporting} className="py-4 bg-black text-white border-4 border-black font-black uppercase italic tracking-widest shadow-[8px_8px_0px_#ccc] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center justify-center gap-2">
                 {isExporting ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-file-export"></i>}
                 Exportar HQ
