@@ -99,7 +99,7 @@ export default function App() {
     if (!exportRef.current) return;
     setIsExporting(true);
     const originalActive = activePanelIdx;
-    setActivePanelIdx(null); // Fecha o modo de ajuste para garantir o overflow-hidden na exportação
+    setActivePanelIdx(null); 
     
     try {
       await new Promise(r => setTimeout(r, 600));
@@ -165,33 +165,35 @@ export default function App() {
     const count = sourceImages.length;
     if (count === 0) return null;
 
-    let gridClass = "grid gap-2 bg-black p-2 border-4 border-black";
-    if (count === 1) gridClass += " grid-cols-1";
-    if (count === 2) gridClass += " grid-cols-1 grid-rows-2 h-full";
+    // Removemos o overflow-hidden da grade principal para permitir que o Bleed Preview funcione corretamente
+    let gridClass = `grid gap-2 bg-black p-2 border-4 border-black ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`;
+    if (count === 1) gridClass += " grid-cols-1 h-full";
+    if (count === 2) gridClass += " grid-cols-1 grid-rows-2 h-full flex flex-col";
     if (count === 3 || count === 4) gridClass += " grid-cols-2 grid-rows-2 h-full";
 
     return (
       <div className={gridClass} style={{ aspectRatio: '1 / 1.4' }}>
         {sourceImages.map((img, i) => {
           const isActive = activePanelIdx === i;
+          // Estilo base para cada quadro. Para 2 imagens, garantimos que ocupem metades iguais.
           let spanClass = `relative bg-white transition-all ${isActive ? 'z-40 overflow-visible ring-4 ring-black' : 'overflow-hidden'}`;
+          if (count === 2) spanClass += " flex-grow h-1/2";
           if (count === 3 && i === 0) spanClass += " col-span-2";
           
           return (
             <div key={img.id} className={spanClass}>
               {isActive && (
-                <div className="absolute inset-0 border-4 border-black/20 pointer-events-none z-10 shadow-[0_0_0_100vmax_rgba(255,255,255,0.7)]"></div>
+                <div className="absolute inset-0 border-4 border-black/40 pointer-events-none z-10 shadow-[0_0_0_200vmax_rgba(255,255,255,0.7)]"></div>
               )}
               
               <img 
                 src={img.url} 
-                alt={`Panel ${i+1}`} 
+                alt={`Panel`} 
                 className={`w-full h-full object-contain grayscale contrast-125 transition-transform duration-75 origin-center`} 
                 style={{
                   transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`
                 }}
               />
-              {/* Etiqueta P-0X removida conforme solicitado pelo usuário */}
             </div>
           );
         })}
@@ -229,11 +231,11 @@ export default function App() {
                     <div className="flex gap-3 mb-2">
                       <div className="relative w-16 h-16 border-2 border-black flex-shrink-0 overflow-hidden bg-white">
                         <img src={img.url} className="w-full h-full object-contain grayscale" />
-                        <div className="absolute bottom-0 left-0 bg-black text-white text-[8px] px-1 font-bold">Q{i+1}</div>
+                        {/* Numeração removida da miniatura conforme solicitado */}
                       </div>
                       <div className="flex-grow space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase italic">Quadro {i+1}</span>
+                          <span className="text-[10px] font-black uppercase italic">Cena Selecionada</span>
                           <div className="flex gap-2">
                             <button 
                               onClick={() => setActivePanelIdx(activePanelIdx === i ? null : i)}
@@ -282,7 +284,7 @@ export default function App() {
                             </div>
                             <div className="bg-blue-50 p-2 text-[7px] font-bold border border-blue-200 rounded text-blue-800">
                               <i className="fa-solid fa-eye mr-1"></i>
-                              MODO PREVIEW: O corte foi desativado temporariamente para você ver a imagem inteira enquanto ajusta.
+                              AJUSTE LIVRE: O corte foi desativado. Mova a imagem livremente para posicioná-la no quadro.
                             </div>
                           </div>
                         )}
@@ -354,7 +356,8 @@ export default function App() {
 
         {/* ÁREA DA FOLHA DE MANGÁ */}
         <div className="lg:col-span-8 flex flex-col items-center">
-          <div ref={exportRef} className="manga-panel bg-white p-6 min-h-[850px] w-full max-w-[700px] relative halftone-bg flex flex-col overflow-hidden border-4 border-black">
+          {/* O overflow-hidden aqui é condicional para permitir o Bleed Preview sem cortes da página */}
+          <div ref={exportRef} className={`manga-panel bg-white p-6 min-h-[850px] w-full max-w-[700px] relative halftone-bg flex flex-col border-4 border-black ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
             {generation.isAnalyzing && (
               <div className="absolute inset-0 z-50 bg-white/95 flex flex-col items-center justify-center font-black uppercase italic animate-pulse">
                 <i className="fa-solid fa-wand-magic-sparkles text-3xl mb-4"></i>
@@ -365,11 +368,11 @@ export default function App() {
             {sourceImages.length === 0 ? (
               <div className="flex-grow flex flex-col items-center justify-center opacity-20 select-none border-4 border-dashed border-black m-4">
                 <i className="fa-solid fa-layer-group text-8xl mb-6"></i>
-                <p className="text-2xl font-black uppercase italic tracking-tighter">Composição Multi-Painel</p>
-                <p className="text-[10px] font-bold tracking-[0.4em] mt-2">COLOQUE ATÉ 4 IMAGENS</p>
+                <p className="text-2xl font-black uppercase italic tracking-tighter">Página de Mangá</p>
+                <p className="text-[10px] font-bold tracking-[0.4em] mt-2">ADICIONE SUAS CENAS</p>
               </div>
             ) : (
-              <div className="relative flex-grow shadow-2xl bg-white border-2 border-black">
+              <div className={`relative flex-grow shadow-2xl bg-white border-2 border-black ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
                 {renderMangaGrid()}
                 
                 {/* CAMADA DE BALÕES */}
