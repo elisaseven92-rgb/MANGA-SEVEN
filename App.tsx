@@ -32,25 +32,12 @@ export default function App() {
           mimeType: file.type,
         };
         setSourceImage(newImg);
-        setGeneration({ 
-          isGenerating: false, 
-          isAnalyzing: true, 
-          error: null, 
-          resultUrl: null, 
-          suggestions: [] 
-        });
-        
+        setGeneration({ isGenerating: false, isAnalyzing: true, error: null, resultUrl: null, suggestions: [] });
         try {
           const analysis = await analyzeMangaPage(base64, file.type);
-          setGeneration(prev => ({ 
-            ...prev, 
-            suggestions: analysis, 
-            isAnalyzing: false,
-            resultUrl: base64 
-          }));
+          setGeneration(prev => ({ ...prev, suggestions: analysis, isAnalyzing: false, resultUrl: base64 }));
         } catch (err) {
-          console.error(err);
-          setGeneration(prev => ({ ...prev, isAnalyzing: false, error: "IA indisponível, use o modo manual." }));
+          setGeneration(prev => ({ ...prev, isAnalyzing: false, error: "Modo manual ativado." }));
         }
       };
       reader.readAsDataURL(file);
@@ -60,7 +47,7 @@ export default function App() {
   const addManualBubble = () => {
     const newSug: SceneSuggestion = {
       panelNumber: 1,
-      description: "Inserção Manual",
+      description: "Novo Balão",
       suggestedDialogue: "Estou pronto para sair da vila. Depois de treinar por dez anos, sinto-me forte",
       position: { x: 50, y: 30 },
       tailAngle: 150,
@@ -70,83 +57,63 @@ export default function App() {
       bubbleType: 'speech',
       readingOrder: generation.suggestions.length + 1
     };
-    setGeneration(prev => ({
-      ...prev,
-      suggestions: [...prev.suggestions, newSug]
-    }));
+    setGeneration(prev => ({ ...prev, suggestions: [...prev.suggestions, newSug] }));
   };
 
-  const handleUpdateSuggestion = (index: number, field: keyof SceneSuggestion, value: any) => {
+  const updateSuggestion = (idx: number, field: keyof SceneSuggestion, val: any) => {
     const newSugs = [...generation.suggestions];
-    (newSugs[index] as any)[field] = value;
+    (newSugs[idx] as any)[field] = val;
     setGeneration(prev => ({ ...prev, suggestions: newSugs }));
   };
 
-  const updatePosition = (index: number, x: number, y: number) => {
+  const updatePosition = (idx: number, x: number, y: number) => {
     const newSugs = [...generation.suggestions];
-    newSugs[index].position = { 
-      x: Math.max(0, Math.min(100, x)), 
-      y: Math.max(0, Math.min(100, y)) 
-    };
-    setGeneration(prev => ({ ...prev, suggestions: newSugs }));
-  };
-
-  const moveStep = (index: number, dx: number, dy: number) => {
-    const s = generation.suggestions[index];
-    updatePosition(index, s.position.x + dx, s.position.y + dy);
-  };
-
-  const removeBubble = (index: number) => {
-    const newSugs = generation.suggestions.filter((_, i) => i !== index);
+    newSugs[idx].position = { x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) };
     setGeneration(prev => ({ ...prev, suggestions: newSugs }));
   };
 
   const handleDownload = async () => {
     if (!exportRef.current) return;
+    setIsExporting(true);
     try {
-      setIsExporting(true);
-      await new Promise(r => setTimeout(r, 400));
-      const dataUrl = await toPng(exportRef.current, {
-        cacheBust: true,
-        backgroundColor: '#ffffff',
-        pixelRatio: 3
-      });
+      await new Promise(r => setTimeout(r, 500));
+      const dataUrl = await toPng(exportRef.current, { cacheBust: true, pixelRatio: 3 });
       const link = document.createElement('a');
-      link.download = `seven-manga-export-${Date.now()}.png`;
+      link.download = `manga-final-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
-    } catch (err) {
-      console.error('Erro ao exportar:', err);
     } finally {
       setIsExporting(false);
     }
   };
 
   const bubbleOptions: { label: string; value: BubbleType; icon: string }[] = [
-    { label: 'Fala', value: 'speech', icon: 'fa-comment' },
-    { label: 'Grito', value: 'scream', icon: 'fa-bolt' },
-    { label: 'Pensa', value: 'thought', icon: 'fa-cloud' },
-    { label: 'Nuvem', value: 'wavy', icon: 'fa-cloud-meatball' },
-    { label: 'Retâng', value: 'modern', icon: 'fa-window-maximize' },
-    { label: 'Orgâni', value: 'organic', icon: 'fa-circle-nodes' },
-    { label: 'Narra', value: 'narrative', icon: 'fa-square' },
-    { label: 'Sussu', value: 'whisper', icon: 'fa-ellipsis' },
+    { label: 'Speech', value: 'speech', icon: 'fa-comment' },
+    { label: 'Thought', value: 'thought', icon: 'fa-cloud' },
+    { label: 'Scream', value: 'scream', icon: 'fa-bolt' },
+    { label: 'Wavy', value: 'wavy', icon: 'fa-cloud-meatball' },
+    { label: 'Modern', value: 'modern', icon: 'fa-window-maximize' },
+    { label: 'Sharp', value: 'sharp', icon: 'fa-caret-up' },
+    { label: 'Organic', value: 'organic', icon: 'fa-circle-nodes' },
+    { label: 'Narrative', value: 'narrative', icon: 'fa-square' },
+    { label: 'Whisper', value: 'whisper', icon: 'fa-ellipsis' },
   ];
 
-  const getBubbleInnerStyles = (type: BubbleType) => {
-    const base = "w-full h-full bg-white flex items-center justify-center border-black transition-all overflow-visible";
+  const getBubbleStyles = (type: BubbleType) => {
+    const base = "w-full h-full bg-white flex items-center justify-center border-black transition-all";
     switch (type) {
       case 'scream':
-        return `${base} [clip-path:polygon(0%_20%,_5%_0%,_20%_15%,_35%_0%,_50%_15%,_65%_0%,_80%_15%,_95%_0%,_100%_20%,_85%_35%,_100%_50%,_85%_65%,_100%_80%,_95%_100%,_80%_85%,_65%_100%,_50%_85%,_35%_100%,_20%_85%,_5%_100%,_0%_80%,_15%_65%,_0%_50%,_15%_35%)] px-12 py-12`;
+        return `${base} [clip-path:polygon(0%_20%,_5%_0%,_20%_15%,_35%_0%,_50%_15%,_65%_0%,_80%_15%,_95%_0%,_100%_20%,_85%_35%,_100%_50%,_85%_65%,_100%_80%,_95%_100%,_80%_85%,_65%_100%,_50%_85%,_35%_100%,_20%_85%,_5%_100%,_0%_80%,_15%_65%,_0%_50%,_15%_35%)] px-14 py-14`;
       case 'wavy':
-        // Balão estilo nuvem (wavy speech) do topo da imagem
-        return `${base} [clip-path:polygon(20%_0%,_30%_5%,_40%_0%,_50%_5%,_60%_0%,_70%_5%,_80%_0%,_90%_5%,_100%_20%,_95%_30%,_100%_40%,_95%_50%,_100%_60%,_95%_70%,_100%_80%,_90%_95%,_80%_100%,_70%_95%,_60%_100%,_50%_95%,_40%_100%,_30%_95%,_20%_100%,_5%_80%,_0%_70%,_5%_60%,_0%_50%,_5%_40%,_0%_30%,_5%_20%)] px-10 py-10`;
+        return `${base} [clip-path:polygon(20%_0%,_35%_5%,_50%_0%,_65%_5%,_80%_0%,_100%_20%,_95%_35%,_100%_50%,_95%_65%,_100%_80%,_80%_100%,_65%_95%,_50%_100%,_35%_95%,_20%_100%,_0%_80%,_5%_65%,_0%_50%,_5%_35%,_0%_20%)] px-12 py-12`;
       case 'thought':
         return `${base} border-[4px] rounded-[100%] px-10 py-12`;
       case 'modern':
-        return `${base} border-[4px] rounded-2xl px-8 py-10`;
+        return `${base} border-[4px] rounded-3xl px-8 py-10`;
       case 'organic':
-        return `${base} border-[4px] [border-radius:60%_40%_30%_70%_/_60%_30%_70%_40%] px-10 py-12`;
+        return `${base} border-[4px] [border-radius:55%_45%_35%_65%_/_65%_35%_45%_55%] px-10 py-12`;
+      case 'sharp':
+        return `${base} border-[4px] [clip-path:polygon(10%_0%,_90%_0%,_100%_20%,_100%_80%,_90%_100%,_10%_100%,_0%_80%,_0%_20%)] px-10 py-12`;
       case 'narrative':
         return `${base} border-[5px] px-6 py-4 rounded-none`;
       case 'whisper':
@@ -156,9 +123,8 @@ export default function App() {
     }
   };
 
-  const getContainerStyles = (type: BubbleType) => {
-    // Tipos que usam clip-path precisam de filtros para simular borda
-    if (type === 'scream' || type === 'wavy') {
+  const getFilter = (type: BubbleType) => {
+    if (['scream', 'wavy', 'sharp'].includes(type)) {
       return "relative [filter:drop-shadow(3px_0_0_black)_drop-shadow(-3px_0_0_black)_drop-shadow(0_3px_0_black)_drop-shadow(0_-3px_0_black)]";
     }
     return "relative";
@@ -166,105 +132,44 @@ export default function App() {
 
   return (
     <Layout>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className="lg:col-span-4 space-y-6 no-print">
-          <div className="manga-panel bg-white p-5 space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-4 no-print space-y-6">
+          <div className="manga-panel p-5 bg-white space-y-4">
             <div className="flex justify-between items-center border-b-4 border-black pb-2">
-              <h2 className="text-xl font-black uppercase flex items-center gap-2 italic tracking-tighter">
-                <i className="fa-solid fa-wand-magic-sparkles"></i>
-                Estúdio 2.0
-              </h2>
-              {sourceImage && (
-                <button 
-                  onClick={addManualBubble}
-                  className="bg-black text-white text-[10px] font-black px-3 py-1 uppercase hover:bg-gray-800 transition-colors"
-                >
-                  + Novo Balão
-                </button>
-              )}
+              <h2 className="text-xl font-black uppercase italic tracking-tighter">Estúdio Pro</h2>
+              <button onClick={addManualBubble} className="bg-black text-white px-3 py-1 text-[10px] font-black uppercase">+ Balão</button>
             </div>
-            
             {!sourceImage ? (
-              <div onClick={() => fileInputRef.current?.click()} className="border-4 border-dashed border-black p-12 text-center cursor-pointer hover:bg-black hover:text-white transition-all rounded-xl group">
-                <i className="fa-solid fa-cloud-arrow-up text-5xl mb-4 group-hover:scale-110 transition-transform"></i>
-                <p className="font-black text-sm uppercase">Abrir Arte Principal</p>
+              <div onClick={() => fileInputRef.current?.click()} className="border-4 border-dashed border-black p-12 text-center cursor-pointer hover:bg-black hover:text-white transition-all rounded-xl">
+                <i className="fa-solid fa-cloud-arrow-up text-4xl mb-2"></i>
+                <p className="font-black text-xs uppercase">Carregar Arte</p>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
               </div>
             ) : (
-              <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-2 custom-scrollbar">
-                {generation.suggestions.map((s, idx) => (
-                  <div key={idx} className="bg-white border-2 border-black p-4 space-y-4 shadow-[4px_4px_0px_#000] relative">
-                    <button onClick={() => removeBubble(idx)} className="absolute top-2 right-2 hover:text-red-600 transition-colors">
-                      <i className="fa-solid fa-trash-can text-sm"></i>
-                    </button>
-                    
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-4 gap-1">
-                        {bubbleOptions.map(opt => (
-                          <button
-                            key={opt.value}
-                            onClick={() => handleUpdateSuggestion(idx, 'bubbleType', opt.value)}
-                            className={`flex flex-col items-center p-1 border-2 border-black text-[7px] font-black uppercase transition-colors ${s.bubbleType === opt.value ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}
-                            title={opt.label}
-                          >
-                            <i className={`fa-solid ${opt.icon} mb-1`}></i>
-                            <span className="truncate w-full text-center">{opt.label}</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="flex items-center justify-between gap-4 pt-2">
-                        <span className="text-[9px] font-black uppercase italic">Item #{idx + 1}</span>
-                        <div className="flex gap-2">
-                          <div className="flex items-center gap-1">
-                            <i className="fa-solid fa-text-height text-[8px]"></i>
-                            <input type="range" min="10" max="40" value={s.fontSize || 16} onChange={(e) => handleUpdateSuggestion(idx, 'fontSize', parseInt(e.target.value))} className="w-12 accent-black h-1 bg-gray-200" />
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <i className="fa-solid fa-maximize text-[8px]"></i>
-                            <input type="range" min="10" max="80" value={s.bubbleScale || 35} onChange={(e) => handleUpdateSuggestion(idx, 'bubbleScale', parseInt(e.target.value))} className="w-12 accent-black h-1 bg-gray-200" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <textarea
-                        value={s.suggestedDialogue}
-                        onChange={(e) => handleUpdateSuggestion(idx, 'suggestedDialogue', e.target.value)}
-                        className="w-full text-sm font-bold border-2 border-black p-2 h-16 resize-none focus:bg-yellow-50 outline-none leading-tight"
-                      />
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                {generation.suggestions.map((s, i) => (
+                  <div key={i} className="border-2 border-black p-4 space-y-3 bg-white shadow-[4px_4px_0px_#000]">
+                    <div className="grid grid-cols-5 gap-1">
+                      {bubbleOptions.map(opt => (
+                        <button key={opt.value} onClick={() => updateSuggestion(i, 'bubbleType', opt.value)} className={`p-1 border-2 border-black text-[7px] font-black transition-all ${s.bubbleType === opt.value ? 'bg-black text-white' : 'bg-white'}`} title={opt.label}>
+                          <i className={`fa-solid ${opt.icon}`}></i>
+                        </button>
+                      ))}
+                      <button onClick={() => setGeneration(p => ({...p, suggestions: p.suggestions.filter((_, idx) => idx !== i)}))} className="p-1 border-2 border-black text-[7px] font-black text-red-600">
+                        <i className="fa-solid fa-trash"></i>
+                      </button>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4 border-t-2 border-black pt-3">
-                      <div className="space-y-2">
-                        <label className="text-[8px] font-black uppercase block">Coordenadas X/Y</label>
-                        <input type="range" min="0" max="100" value={s.position.x} onChange={(e) => updatePosition(idx, parseInt(e.target.value), s.position.y)} className="w-full h-1 bg-gray-200 accent-black mb-1" />
-                        <input type="range" min="0" max="100" value={s.position.y} onChange={(e) => updatePosition(idx, s.position.x, parseInt(e.target.value))} className="w-full h-1 bg-gray-200 accent-black" />
+                    <textarea value={s.suggestedDialogue} onChange={e => updateSuggestion(i, 'suggestedDialogue', e.target.value)} className="w-full text-xs font-bold border-2 border-black p-2 h-16 resize-none focus:bg-yellow-50 outline-none" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[7px] font-black uppercase block">Tamanho/Escala</label>
+                        <input type="range" min="10" max="80" value={s.bubbleScale} onChange={e => updateSuggestion(i, 'bubbleScale', parseInt(e.target.value))} className="w-full accent-black h-1" />
                       </div>
-                      <div className="grid grid-cols-3 gap-1">
-                        <div />
-                        <button onClick={() => moveStep(idx, 0, -2)} className="h-6 bg-black text-white flex items-center justify-center"><i className="fa-solid fa-caret-up"></i></button>
-                        <div />
-                        <button onClick={() => moveStep(idx, -2, 0)} className="h-6 bg-black text-white flex items-center justify-center"><i className="fa-solid fa-caret-left"></i></button>
-                        <div className="h-6 flex items-center justify-center text-[7px] font-black border border-black italic">MOVE</div>
-                        <button onClick={() => moveStep(idx, 2, 0)} className="h-6 bg-black text-white flex items-center justify-center"><i className="fa-solid fa-caret-right"></i></button>
-                        <div />
-                        <button onClick={() => moveStep(idx, 0, 2)} className="h-6 bg-black text-white flex items-center justify-center"><i className="fa-solid fa-caret-down"></i></button>
-                        <div />
+                      <div className="space-y-1">
+                        <label className="text-[7px] font-black uppercase block">Ang/Comp Rabicho</label>
+                        <input type="range" min="0" max="360" value={s.tailAngle} onChange={e => updateSuggestion(i, 'tailAngle', parseInt(e.target.value))} className="w-full accent-black h-1" />
                       </div>
                     </div>
-
-                    {s.bubbleType !== 'narrative' && (
-                      <div className="grid grid-cols-2 gap-3 border-t-2 border-black pt-3">
-                        <div className="space-y-1">
-                          <label className="text-[8px] font-black uppercase">Rotação Rabicho</label>
-                          <input type="range" min="0" max="360" value={s.tailAngle} onChange={(e) => handleUpdateSuggestion(idx, 'tailAngle', parseInt(e.target.value))} className="w-full h-1 accent-black" />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[8px] font-black uppercase">Extensão</label>
-                          <input type="range" min="0" max="100" value={s.tailLength} onChange={(e) => handleUpdateSuggestion(idx, 'tailLength', parseInt(e.target.value))} className="w-full h-1 accent-black" />
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -272,67 +177,38 @@ export default function App() {
           </div>
         </div>
 
-        <div className="lg:col-span-8">
-          <div ref={exportRef} className="manga-panel bg-white p-4 min-h-[800px] flex items-center justify-center relative halftone-bg overflow-hidden border-4 border-black group">
-            {generation.isAnalyzing && (
-              <div className="absolute inset-0 z-50 bg-white/95 flex flex-col items-center justify-center no-print">
-                <div className="w-16 h-16 border-4 border-gray-100 border-t-black rounded-full animate-spin mb-4"></div>
-                <h3 className="text-xl font-black uppercase italic animate-pulse tracking-widest">Processando Página...</h3>
-              </div>
-            )}
-
-            {!sourceImage ? (
-              <div className="text-center opacity-20 flex flex-col items-center no-print select-none">
-                <i className="fa-solid fa-swatchbook text-[100px] mb-6"></i>
-                <p className="text-3xl font-black uppercase italic tracking-tighter">Seven Mangá Canvas</p>
-                <p className="text-[10px] font-bold tracking-[0.4em] mt-2">MULTIPLE MODELS ADDED</p>
-              </div>
-            ) : (
-              <div className="relative inline-block w-full max-w-3xl bg-white border-2 border-black shadow-2xl">
+        <div className="lg:col-span-8 flex flex-col items-center">
+          <div ref={exportRef} className="manga-panel bg-white p-4 min-h-[700px] w-full relative halftone-bg flex items-center justify-center overflow-hidden border-4 border-black">
+            {generation.isAnalyzing && <div className="absolute inset-0 z-50 bg-white/90 flex flex-col items-center justify-center font-black uppercase italic animate-pulse">Letreirando via IA...</div>}
+            {sourceImage && (
+              <div className="relative inline-block bg-white shadow-2xl border-2 border-black">
                 <img src={sourceImage.url} alt="Manga" className="w-full h-auto block grayscale contrast-125" />
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <div className="absolute inset-0 pointer-events-none">
                   {generation.suggestions.map((s, idx) => {
                     const rad = (s.tailAngle - 90) * (Math.PI / 180);
                     const cosA = Math.cos(rad);
                     const sinA = Math.sin(rad);
-                    const currentScale = s.bubbleScale || 35;
-                    
+                    const scale = s.bubbleScale || 35;
                     return (
-                      <div 
-                        key={idx}
-                        className="absolute transform -translate-x-1/2 -translate-y-1/2"
-                        style={{ left: `${s.position.x}%`, top: `${s.position.y}%`, width: `${currentScale}%`, zIndex: 100 + idx }}
-                      >
-                        <div className={getContainerStyles(s.bubbleType)}>
+                      <div key={idx} className="absolute transform -translate-x-1/2 -translate-y-1/2" style={{ left: `${s.position.x}%`, top: `${s.position.y}%`, width: `${scale}%`, zIndex: 100 + idx }}>
+                        <div className={getFilter(s.bubbleType)}>
                           {s.bubbleType !== 'narrative' && s.tailLength > 0 && (
                             <div className="absolute pointer-events-none" style={{ left: `calc(50% + ${cosA * 55}%)`, top: `calc(50% + ${sinA * 55}%)`, transform: `translate(-50%, -50%) rotate(${s.tailAngle}deg)` }}>
-                              <div className="relative flex flex-col items-center">
-                                {s.bubbleType === 'thought' ? (
-                                  <div className="flex flex-col gap-2 items-center">
-                                    <div className="w-6 h-6 rounded-full border-[3px] border-black bg-white"></div>
-                                    <div className="w-4 h-4 rounded-full border-[2px] border-black bg-white"></div>
-                                    <div className="w-2 h-2 rounded-full border-[1.5px] border-black bg-white"></div>
-                                  </div>
-                                ) : (
-                                  <div className="relative flex flex-col items-center">
-                                    <div className="w-0 h-0 border-l-[18px] border-l-transparent border-r-[18px] border-r-transparent border-t-black" style={{ borderTopWidth: `${s.tailLength}px`, marginTop: '-5px' }}></div>
-                                    <div className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[13px] border-l-transparent border-r-[13px] border-r-transparent border-t-white" style={{ borderTopWidth: `${s.tailLength - 6}px` }}></div>
-                                  </div>
-                                )}
-                              </div>
+                              {s.bubbleType === 'thought' ? (
+                                <div className="flex flex-col gap-2 items-center">
+                                  <div className="w-6 h-6 rounded-full border-[3px] border-black bg-white shadow-[2px_2px_0_black]"></div>
+                                  <div className="w-3 h-3 rounded-full border-[2px] border-black bg-white shadow-[1px_1px_0_black]"></div>
+                                </div>
+                              ) : (
+                                <div className="relative flex flex-col items-center">
+                                  <div className="w-0 h-0 border-l-[18px] border-l-transparent border-r-[18px] border-r-transparent border-t-black" style={{ borderTopWidth: `${s.tailLength}px`, marginTop: '-4px' }}></div>
+                                  <div className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[13px] border-l-transparent border-r-[13px] border-r-transparent border-t-white" style={{ borderTopWidth: `${s.tailLength - 6}px` }}></div>
+                                </div>
+                              )}
                             </div>
                           )}
-
-                          <div className={getBubbleInnerStyles(s.bubbleType)}>
-                            <p 
-                              className="text-black font-black text-center leading-tight select-none uppercase tracking-tighter" 
-                              style={{ 
-                                fontSize: `${s.fontSize || 16}px`, 
-                                fontFamily: 'Noto Sans JP, sans-serif' 
-                              }}
-                            >
-                              {s.suggestedDialogue}
-                            </p>
+                          <div className={getBubbleStyles(s.bubbleType)}>
+                            <p className="text-black font-black text-center leading-tight select-none uppercase tracking-tighter" style={{ fontSize: `${s.fontSize || 16}px` }}>{s.suggestedDialogue}</p>
                           </div>
                         </div>
                       </div>
@@ -342,25 +218,12 @@ export default function App() {
               </div>
             )}
           </div>
-          
           {sourceImage && (
-            <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-6 no-print">
-               <div className="flex items-center gap-3 text-[10px] font-black text-black uppercase italic bg-white px-5 py-3 border-2 border-black shadow-[4px_4px_0px_#000]">
-                  <i className="fa-solid fa-images text-lg"></i>
-                  <span>Novos Modelos: Wavy, Modern e Organic agora disponíveis!</span>
-               </div>
-               <div className="flex gap-4">
-                 <button onClick={() => setSourceImage(null)} className="px-6 py-4 bg-white border-4 border-black font-black uppercase text-sm hover:bg-black hover:text-white transition-all">
-                   Trocar Arte
-                 </button>
-                 <button 
-                    onClick={handleDownload} 
-                    disabled={isExporting} 
-                    className="bg-black text-white border-4 border-black px-12 py-4 font-black uppercase text-base shadow-[6px_6px_0px_#ccc] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center gap-2 group"
-                 >
-                   {isExporting ? <><i className="fa-solid fa-spinner animate-spin"></i> SALVANDO...</> : <><i className="fa-solid fa-check-double group-hover:scale-125 transition-transform"></i> EXPORTAR PÁGINA</>}
-                 </button>
-               </div>
+            <div className="mt-6 flex gap-4 w-full">
+              <button onClick={() => setSourceImage(null)} className="flex-1 py-4 bg-white border-4 border-black font-black uppercase italic tracking-widest hover:bg-black hover:text-white transition-all">Trocar Arte</button>
+              <button onClick={handleDownload} disabled={isExporting} className="flex-1 py-4 bg-black text-white border-4 border-black font-black uppercase italic tracking-widest shadow-[8px_8px_0px_#ccc] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
+                {isExporting ? 'Processando...' : 'Exportar Página'}
+              </button>
             </div>
           )}
         </div>

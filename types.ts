@@ -6,7 +6,16 @@ export interface MangaImage {
   mimeType: string;
 }
 
-export type BubbleType = 'speech' | 'thought' | 'scream' | 'narrative' | 'whisper' | 'wavy' | 'modern' | 'organic';
+export type BubbleType = 
+  | 'speech' 
+  | 'thought' 
+  | 'scream' 
+  | 'narrative' 
+  | 'whisper' 
+  | 'wavy' 
+  | 'modern' 
+  | 'organic'
+  | 'sharp';
 
 export interface SceneSuggestion {
   panelNumber: number;
@@ -19,7 +28,7 @@ export interface SceneSuggestion {
   tailAngle: number; // 0-360
   tailLength: number; // Comprimento do rabicho
   fontSize: number; // Tamanho da fonte em px
-  bubbleScale: number; // Escala/Largura do balão em % (ex: 20-60)
+  bubbleScale: number; // Escala/Largura do balão em %
   bubbleType: BubbleType; // Estilo do balão
   readingOrder: number;
 }
