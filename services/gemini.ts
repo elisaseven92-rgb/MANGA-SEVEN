@@ -21,18 +21,24 @@ export async function analyzeMangaPage(
           },
           {
             text: `Aja como um Editor de Mangá Profissional.
-            Sua tarefa é analisar a arte e sugerir balões de fala, focando especialmente em gritos e efeitos se a cena for de ação.
+            Analise a composição da página e sugira balões de fala baseados no tom da cena.
 
-            TYPES MAPPING:
-            - 'speech': Fala normal (oval).
-            - 'scream': Grito agressivo (bordas irregulares).
-            - 'shock': Grito de surpresa ou choque (estilo flash/estrelado).
-            - 'burst': Impacto ou fala poderosa (bordas grossas e angulares).
-            - 'thought': Pensamentos (nuvem).
-            - 'soft-rect': Fala calma/explanação.
-            - 'narrative': Narração.
+            BIBLIOTECA DE ESTILOS DISPONÍVEL:
+            - 'speech': Padrão.
+            - 'scream': Intensidade/Grito.
+            - 'shock': Surpresa extrema.
+            - 'burst': Impacto sonoro.
+            - 'thought': Monólogo interno.
+            - 'narrative': Explicação/Caixa.
+            - 'dripping': Horror/Desespero.
+            - 'mechanical': Robôs/Tecnologia.
+            - 'ice': Frieza/Sarcasmo.
+            - 'flower': Alegria/Romance.
 
-            Retorne um JSON array rigoroso. Não inclua setas (showTail deve ser false).`,
+            REGRAS:
+            1. Posicione os balões para não tapar os rostos dos personagens.
+            2. Use 'showTail: false' sempre.
+            3. A leitura deve ser da direita para a esquerda (padrão japonês).`,
           },
         ],
       },
@@ -68,7 +74,7 @@ export async function analyzeMangaPage(
 
     return JSON.parse(response.text || "[]").sort((a: any, b: any) => a.readingOrder - b.readingOrder);
   } catch (error) {
-    console.error("Erro na análise visual narrativa:", error);
+    console.error("Erro na análise profissional:", error);
     return [];
   }
 }

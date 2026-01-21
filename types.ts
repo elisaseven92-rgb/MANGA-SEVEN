@@ -10,26 +10,12 @@ export interface MangaImage {
 }
 
 export type BubbleType = 
-  | 'speech'      // Oval
-  | 'scream'      // Grito Agressivo
-  | 'shock'       // Grito de Choque (Flash)
-  | 'burst'       // Explosão de Impacto
-  | 'thought'     // Nuvem
-  | 'soft-rect'   // Retângulo Arredondado
-  | 'trapezoid'   // Trapezoide
-  | 'starburst'   // Estrela de Ação
-  | 'capsule'     // Cápsula Larga
-  | 'bean'        // Formato Orgânico
-  | 'narrative'   // Caixa Reta
-  | 'whisper'     // Pontilhado
-  | 'impact'      // Sólido Preto
-  | 'electronic'  // Digital
-  | 'heart'       // Shojo Love
-  | 'fear'        // Medo/Trêmulo
-  | 'ice'         // Frio/Afiado
-  | 'radio'       // Transmissão
-  | 'flower'      // Fofo/Pétalas
-  | 'double';      // Impacto Duplo
+  | 'speech'      | 'scream'     | 'shock'       | 'burst'      | 'thought'
+  | 'soft-rect'   | 'trapezoid'  | 'starburst'   | 'capsule'    | 'bean'
+  | 'narrative'   | 'whisper'    | 'impact'      | 'electronic' | 'heart'
+  | 'fear'        | 'ice'        | 'radio'       | 'flower'     | 'double'
+  | 'dripping'    | 'mechanical' | 'sharp'       | 'cloud-puffy'| 'spiky-thought'
+  | 'shojo-spark' | 'double-oval'| 'comic-boom'  | 'scroll'     | 'zig-zag';
 
 export interface SceneSuggestion {
   panelNumber: number;
