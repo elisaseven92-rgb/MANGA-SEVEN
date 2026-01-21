@@ -46,7 +46,23 @@ export default function App() {
     statusMessage: '',
     error: null,
     resultUrl: null,
-    suggestions: [],
+    suggestions: [
+      {
+        id: 'demo-1',
+        panelNumber: 1,
+        description: "Início da Jornada",
+        suggestedDialogue: "ESTOU PRONTO PARA SAIR DA VILA. DEPOIS DE TREINAR POR DEZ ANOS, SINTO-ME FORTE!",
+        position: { x: 50, y: 30 },
+        tailAngle: 0,
+        tailLength: 20,
+        fontSize: 24,
+        bubbleScale: 40,
+        bubbleType: 'speech',
+        readingOrder: 1,
+        zIndex: 10,
+        showTail: false
+      }
+    ],
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,7 +93,7 @@ export default function App() {
   };
 
   const triggerAIAnalysis = async (base64: string, mime: string) => {
-    setGeneration(prev => ({ ...prev, isAnalyzing: true, statusMessage: 'PROCESSANDO NARRATIVA VISUAL...' }));
+    setGeneration(prev => ({ ...prev, isAnalyzing: true, statusMessage: 'ANALISANDO COMPOSIÇÃO...' }));
     try {
       const analysis = await analyzeMangaPage(base64, mime);
       const formatted = analysis.map((s: any) => ({ 
@@ -86,10 +102,10 @@ export default function App() {
         showTail: false, 
         zIndex: 10 
       }));
-      setGeneration(prev => ({ ...prev, suggestions: formatted, isAnalyzing: false, statusMessage: 'READY' }));
+      setGeneration(prev => ({ ...prev, suggestions: formatted, isAnalyzing: false }));
       if (formatted.length > 0) setActiveBubbleIdx(0);
     } catch (err) {
-      setGeneration(prev => ({ ...prev, isAnalyzing: false, error: 'Erro ao analisar a página.' }));
+      setGeneration(prev => ({ ...prev, isAnalyzing: false, error: 'Erro na análise.' }));
     }
   };
 
@@ -97,8 +113,8 @@ export default function App() {
     const newSug: SceneSuggestion = {
       id: Math.random().toString(36).substr(2, 9),
       panelNumber: 1,
-      description: "Manual",
-      suggestedDialogue: "NOVO TEXTO",
+      description: "Novo",
+      suggestedDialogue: "DIGITE AQUI...",
       position: { x: 50, y: 50 },
       tailAngle: 0,
       tailLength: 20,
@@ -111,7 +127,6 @@ export default function App() {
     };
     setGeneration(prev => ({ ...prev, suggestions: [...prev.suggestions, newSug] }));
     setActiveBubbleIdx(generation.suggestions.length);
-    setActiveTab('text');
   };
 
   const updateActiveBubble = (field: keyof SceneSuggestion, val: any) => {
@@ -128,19 +143,16 @@ export default function App() {
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     
-    const newSugs = [...generation.suggestions];
-    newSugs[activeBubbleIdx].position = { x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) };
-    setGeneration(prev => ({ ...prev, suggestions: newSugs }));
+    updateActiveBubble('position', { x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
   };
 
   const handleDownload = async () => {
     if (!exportRef.current) return;
     setIsExporting(true);
     try {
-      await new Promise(r => setTimeout(r, 800));
       const dataUrl = await toPng(exportRef.current, { pixelRatio: 3, backgroundColor: '#fff' });
       const link = document.createElement('a');
-      link.download = `manga-studio-${Date.now()}.png`;
+      link.download = `manga-final-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
     } finally {
@@ -188,212 +200,215 @@ export default function App() {
 
   return (
     <Layout>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative">
-        {/* STUDIO TOOLBOX (LEFT PANEL) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative max-w-[1600px] mx-auto">
+        
+        {/* SIDEBAR TOOLBOX */}
         <div className="lg:col-span-4 space-y-4 no-print sticky top-24">
-          <div className="manga-panel p-0 bg-[#0c0c0e] border border-zinc-800 overflow-hidden flex flex-col min-h-[600px]">
-            {/* STUDIO TABS */}
-            <div className="flex bg-black border-b border-zinc-800">
+          <div className="manga-panel p-0 bg-black border border-zinc-800 overflow-hidden flex flex-col min-h-[650px] shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+            
+            {/* TABS STYLING */}
+            <div className="flex border-b border-zinc-800">
               {(['text', 'style', 'layout'] as Tab[]).map(t => (
                 <button 
                   key={t}
                   onClick={() => setActiveTab(t)}
-                  className={`flex-1 py-3 text-[9px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === t ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'}`}
+                  className={`flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === t ? 'bg-white text-black' : 'text-zinc-500 hover:text-white bg-zinc-900/20'}`}
                 >
                   {t}
                 </button>
               ))}
             </div>
 
-            <div className="p-5 flex-grow overflow-y-auto custom-scrollbar">
-              {sourceImages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center py-20 opacity-20 text-center">
-                  <i className="fa-solid fa-file-export text-5xl mb-4 text-white"></i>
-                  <p className="text-[10px] font-black uppercase text-white">WORKSPACE VAZIO</p>
-                  <button onClick={() => fileInputRef.current?.click()} className="mt-8 bg-white text-black px-10 py-3 text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-colors">Import Art</button>
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* LAYER MANAGER (BUBBLE LIST) */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center px-1">
-                      <label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">Layers</label>
-                      <button onClick={addManualBubble} className="text-[9px] font-black uppercase text-zinc-300 hover:text-white transition-colors">+ Add Bubble</button>
-                    </div>
-                    <div className="grid grid-cols-6 gap-2">
-                      {generation.suggestions.map((_, i) => (
-                        <button 
-                          key={i}
-                          onClick={() => setActiveBubbleIdx(i)}
-                          className={`aspect-square border flex items-center justify-center font-black text-[10px] transition-all rounded-sm ${activeBubbleIdx === i ? 'bg-white text-black border-white' : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-500'}`}
-                        >
-                          {i + 1}
-                        </button>
-                      ))}
-                    </div>
+            <div className="p-6 flex-grow overflow-y-auto custom-scrollbar bg-gradient-to-b from-[#0a0a0b] to-[#050505]">
+              
+              <div className="space-y-8">
+                {/* LAYER LIST */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center px-1">
+                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">Bubble Layers</label>
+                    <button onClick={addManualBubble} className="bg-white text-black px-3 py-1 text-[8px] font-black uppercase hover:bg-zinc-200 transition-colors rounded-full">
+                      + NEW
+                    </button>
                   </div>
-
-                  {currentBubble && (
-                    <div className="space-y-6 animate-in fade-in duration-300 border-t border-zinc-800 pt-6">
-                      {activeTab === 'text' && (
-                        <div className="space-y-4">
-                          <div className="bg-black border border-zinc-700 p-4 rounded-sm">
-                            <textarea 
-                              value={currentBubble.suggestedDialogue} 
-                              onChange={e => updateActiveBubble('suggestedDialogue', e.target.value)} 
-                              className="w-full bg-transparent text-sm font-bold text-white uppercase resize-none h-32 focus:outline-none placeholder-zinc-700 leading-relaxed"
-                              placeholder="Insert dialogue..."
-                            />
-                          </div>
-                          <div className="space-y-3">
-                            <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500"><span>Font Size</span><span className="text-zinc-300">{currentBubble.fontSize}pt</span></div>
-                            <input type="range" min="8" max="100" value={currentBubble.fontSize} onChange={e => updateActiveBubble('fontSize', parseInt(e.target.value))} />
-                          </div>
-                        </div>
-                      )}
-
-                      {activeTab === 'style' && (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-6 gap-1.5">
-                            {BUBBLE_STYLES.map(style => (
-                              <button 
-                                key={style.type}
-                                onClick={() => updateActiveBubble('bubbleType', style.type)}
-                                className={`aspect-square border flex items-center justify-center text-xs transition-all rounded-sm ${currentBubble.bubbleType === style.type ? 'bg-white text-black border-white shadow-lg' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}
-                                title={style.type}
-                              >
-                                <i className={`fa-solid ${style.icon}`}></i>
-                              </button>
-                            ))}
-                          </div>
-                          <p className="text-[8px] font-black uppercase text-zinc-600 text-center tracking-widest">Studio FX Library</p>
-                        </div>
-                      )}
-
-                      {activeTab === 'layout' && (
-                        <div className="space-y-5">
-                          <div className="space-y-3">
-                            <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500"><span>Scale</span><span className="text-zinc-300">{currentBubble.bubbleScale}%</span></div>
-                            <input type="range" min="5" max="95" value={currentBubble.bubbleScale} onChange={e => updateActiveBubble('bubbleScale', parseInt(e.target.value))} />
-                          </div>
-                          <div className="space-y-3">
-                            <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500"><span>Rotation</span><span className="text-zinc-300">{currentBubble.tailAngle}°</span></div>
-                            <input type="range" min="-180" max="180" value={currentBubble.tailAngle} onChange={e => updateActiveBubble('tailAngle', parseInt(e.target.value))} />
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                             <button 
-                              onClick={() => updateActiveBubble('zIndex', (currentBubble.zIndex || 10) + 1)}
-                              className="bg-zinc-900 border border-zinc-700 py-3 text-[8px] font-black uppercase text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all rounded-sm"
-                             >
-                               Move Up
-                             </button>
-                             <button 
-                              onClick={() => updateActiveBubble('zIndex', Math.max(1, (currentBubble.zIndex || 10) - 1))}
-                              className="bg-zinc-900 border border-zinc-700 py-3 text-[8px] font-black uppercase text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all rounded-sm"
-                             >
-                               Move Down
-                             </button>
-                          </div>
-                          <button 
-                            onClick={() => setGeneration(p => ({...p, suggestions: p.suggestions.filter((_, idx) => idx !== activeBubbleIdx)}))} 
-                            className="w-full py-2 bg-red-950/20 text-red-500 border border-red-900/30 text-[8px] font-black uppercase hover:bg-red-600 hover:text-white transition-all rounded-sm"
-                          >
-                            Purge Element
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="grid grid-cols-6 gap-2">
+                    {generation.suggestions.map((_, i) => (
+                      <button 
+                        key={i}
+                        onClick={() => setActiveBubbleIdx(i)}
+                        className={`aspect-square border flex items-center justify-center font-black text-[11px] transition-all rounded-sm ${activeBubbleIdx === i ? 'bg-white text-black border-white scale-110 z-10' : 'bg-zinc-900 text-zinc-600 border-zinc-800 hover:border-zinc-500'}`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
+
+                {currentBubble && (
+                  <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-300">
+                    
+                    {activeTab === 'text' && (
+                      <div className="space-y-5">
+                        <div className="bg-[#0f0f11] border border-zinc-700 p-5 rounded-sm focus-within:border-white transition-colors">
+                          <textarea 
+                            value={currentBubble.suggestedDialogue} 
+                            onChange={e => updateActiveBubble('suggestedDialogue', e.target.value)} 
+                            className="w-full bg-transparent text-[13px] font-bold text-white uppercase resize-none h-40 focus:outline-none placeholder-zinc-800 leading-relaxed"
+                            placeholder="DIÁLOGO..."
+                          />
+                        </div>
+                        <div className="space-y-4">
+                          <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500"><span>TAMANHO FONTE</span><span className="text-white">{currentBubble.fontSize}pt</span></div>
+                          <input type="range" min="8" max="120" value={currentBubble.fontSize} onChange={e => updateActiveBubble('fontSize', parseInt(e.target.value))} />
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === 'style' && (
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-6 gap-2">
+                          {BUBBLE_STYLES.map(style => (
+                            <button 
+                              key={style.type}
+                              onClick={() => updateActiveBubble('bubbleType', style.type)}
+                              className={`aspect-square border flex items-center justify-center text-sm transition-all rounded-sm ${currentBubble.bubbleType === style.type ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.4)]' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-400'}`}
+                              title={style.type}
+                            >
+                              <i className={`fa-solid ${style.icon}`}></i>
+                            </button>
+                          ))}
+                        </div>
+                        <div className="text-[8px] font-black uppercase text-center text-zinc-600 tracking-[0.3em]">MANGA ASSETS V3.0</div>
+                      </div>
+                    )}
+
+                    {activeTab === 'layout' && (
+                      <div className="space-y-6">
+                        <div className="space-y-4">
+                          <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500"><span>VOLUME BALÃO</span><span className="text-white">{currentBubble.bubbleScale}%</span></div>
+                          <input type="range" min="5" max="98" value={currentBubble.bubbleScale} onChange={e => updateActiveBubble('bubbleScale', parseInt(e.target.value))} />
+                        </div>
+                        <div className="space-y-4">
+                          <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500"><span>ROTAÇÃO</span><span className="text-white">{currentBubble.tailAngle}°</span></div>
+                          <input type="range" min="-180" max="180" value={currentBubble.tailAngle} onChange={e => updateActiveBubble('tailAngle', parseInt(e.target.value))} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                           <button 
+                            onClick={() => updateActiveBubble('zIndex', (currentBubble.zIndex || 10) + 1)}
+                            className="bg-zinc-900 border border-zinc-700 py-3 text-[8px] font-black uppercase text-zinc-400 hover:bg-white hover:text-black transition-all rounded-sm"
+                           >
+                             Trazer p/ Frente
+                           </button>
+                           <button 
+                            onClick={() => updateActiveBubble('zIndex', Math.max(1, (currentBubble.zIndex || 10) - 1))}
+                            className="bg-zinc-900 border border-zinc-700 py-3 text-[8px] font-black uppercase text-zinc-400 hover:bg-white hover:text-black transition-all rounded-sm"
+                           >
+                             Enviar p/ Trás
+                           </button>
+                        </div>
+                        <button 
+                          onClick={() => setGeneration(p => ({...p, suggestions: p.suggestions.filter((_, idx) => idx !== activeBubbleIdx)}))} 
+                          className="w-full py-3 bg-red-950/10 text-red-500 border border-red-900/20 text-[8px] font-black uppercase hover:bg-red-600 hover:text-white transition-all rounded-sm"
+                        >
+                          Eliminar Balão Selecionado
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             
-            {sourceImages.length > 0 && (
-              <div className="p-4 bg-black border-t border-zinc-800 flex flex-col gap-2">
-                <button onClick={handleDownload} disabled={isExporting} className="w-full bg-white text-black py-4 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                  {isExporting ? 'RENDERING...' : 'EXPORT PROJECT'}
-                </button>
-              </div>
-            )}
+            <div className="p-6 bg-black border-t border-zinc-800">
+               <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
+               <div className="flex gap-2">
+                 <button onClick={() => fileInputRef.current?.click()} className="flex-1 bg-zinc-900 text-white py-4 text-[9px] font-black uppercase tracking-[0.2em] border border-zinc-700 hover:bg-zinc-800 transition-all">
+                   Importar Arte
+                 </button>
+                 <button onClick={handleDownload} disabled={isExporting} className="flex-1 bg-white text-black py-4 text-[9px] font-black uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all">
+                   {isExporting ? 'GERANDO...' : 'EXPORTAR'}
+                 </button>
+               </div>
+            </div>
           </div>
         </div>
 
-        {/* WORKSPACE CANVAS (RIGHT SIDE) */}
+        {/* WORKSPACE CANVAS */}
         <div className="lg:col-span-8 group">
-          <div className="manga-panel bg-[#121214] p-6 lg:p-12 relative halftone-bg min-h-[800px] border border-zinc-800 flex justify-center items-start overflow-hidden">
-            {/* STUDIO STATUS OVERLAY */}
+          <div className="manga-panel bg-[#09090b] p-6 lg:p-16 relative halftone-bg min-h-[850px] border border-zinc-800 flex justify-center items-start overflow-hidden rounded-sm">
+            
+            {/* LOADING OVERLAY */}
             {generation.isAnalyzing && (
-              <div className="absolute inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-12 text-center text-white">
-                <div className="w-48 h-[1px] bg-zinc-800 mb-8 overflow-hidden">
-                   <div className="h-full bg-white animate-[loading_1.5s_infinite_linear]" style={{ width: '30%' }}></div>
+              <div className="absolute inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-12 text-center text-white backdrop-blur-md">
+                <div className="w-64 h-[2px] bg-zinc-900 mb-10 overflow-hidden border border-white/5">
+                   <div className="h-full bg-white animate-[loading_1.2s_infinite_linear]" style={{ width: '40%' }}></div>
                 </div>
-                <p className="manga-font text-2xl italic tracking-[0.1em] uppercase text-zinc-400 animate-pulse">{generation.statusMessage}</p>
+                <p className="manga-font text-3xl italic tracking-[0.2em] uppercase text-zinc-100 animate-pulse">{generation.statusMessage}</p>
+                <p className="text-[9px] font-black uppercase text-zinc-600 mt-4 tracking-widest">AI STUDIO ENGINE</p>
               </div>
             )}
 
             <div 
               ref={exportRef} 
-              className="relative aspect-[1/1.41] bg-white w-full border-[2px] border-zinc-900 overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.6)] cursor-crosshair"
+              className={`relative aspect-[1/1.41] bg-white w-full border-[1px] border-black overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.9)] ${isDragging ? 'cursor-grabbing' : 'cursor-crosshair'}`}
               onMouseMove={handleCanvasMouseMove}
               onMouseUp={() => setIsDragging(false)}
               onMouseLeave={() => setIsDragging(false)}
             >
-              {sourceImages.length > 0 ? (
-                <div className="relative w-full h-full select-none" ref={canvasRef}>
+              <div className="relative w-full h-full select-none" ref={canvasRef}>
+                {sourceImages.length > 0 ? (
                   <img 
                     src={sourceImages[0].url} 
                     className="w-full h-full grayscale object-cover"
-                    style={{ filter: 'contrast(1.4) brightness(1) saturate(0)' }}
+                    style={{ filter: 'contrast(1.5) brightness(1.05) saturate(0)' }}
                   />
-                  
-                  <div className="absolute inset-0 pointer-events-none">
-                    {generation.suggestions.map((s, idx) => (
-                      <div 
-                        key={s.id} 
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                          setActiveBubbleIdx(idx);
-                          setIsDragging(true);
-                        }}
-                        className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center transition-opacity pointer-events-auto cursor-move ${activeBubbleIdx === idx ? 'z-40' : 'opacity-85'}`} 
-                        style={{ 
-                          left: `${s.position.x}%`, 
-                          top: `${s.position.y}%`, 
-                          width: `${s.bubbleScale}%`,
-                          zIndex: s.zIndex || 10,
-                          transform: `translate(-50%, -50%) rotate(${s.tailAngle}deg)` 
-                        }}
-                      >
-                        <div className="relative w-full group/bubble">
-                          <div 
-                            className={`bg-white p-5 flex items-center justify-center text-center border-black shadow-2xl ${getBubbleStyle(s.bubbleType)} ${activeBubbleIdx === idx ? 'ring-2 ring-white ring-offset-4 ring-offset-black' : ''}`}
-                            style={{ 
-                              minHeight: '40px', 
-                              width: '100%', 
-                              color: s.bubbleType === 'impact' ? '#fff' : '#000',
-                            }}
-                          >
-                             <p className="font-black leading-[0.9] uppercase tracking-tighter" style={{ fontSize: `${s.fontSize}px` }}>
-                               {s.suggestedDialogue}
-                             </p>
-                          </div>
-                          
-                          {/* EDIT GUIDES (ACTIVE STATE) */}
-                          {activeBubbleIdx === idx && (
-                            <div className="absolute -inset-2 border border-white/20 border-dashed rounded-lg pointer-events-none"></div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                ) : (
+                  <div className="absolute inset-0 bg-[#f8f8f8] flex flex-col items-center justify-center p-10 text-center opacity-40">
+                     <i className="fa-solid fa-image text-8xl mb-6 text-zinc-300"></i>
+                     <p className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Aguardando Imagem Original</p>
                   </div>
+                )}
+                
+                <div className="absolute inset-0 pointer-events-none">
+                  {generation.suggestions.map((s, idx) => (
+                    <div 
+                      key={s.id} 
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        setActiveBubbleIdx(idx);
+                        setIsDragging(true);
+                      }}
+                      className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-auto transition-transform ${activeBubbleIdx === idx ? 'z-40' : 'opacity-90'}`} 
+                      style={{ 
+                        left: `${s.position.x}%`, 
+                        top: `${s.position.y}%`, 
+                        width: `${s.bubbleScale}%`,
+                        zIndex: s.zIndex || 10,
+                        transform: `translate(-50%, -50%) rotate(${s.tailAngle}deg) ${isDragging && activeBubbleIdx === idx ? 'scale(1.05)' : 'scale(1)'}` 
+                      }}
+                    >
+                      <div className="relative w-full group/bubble">
+                        <div 
+                          className={`bg-white p-5 flex items-center justify-center text-center border-black shadow-2xl ${getBubbleStyle(s.bubbleType)} ${activeBubbleIdx === idx ? 'ring-4 ring-black ring-offset-4 ring-offset-white' : ''}`}
+                          style={{ 
+                            minHeight: '40px', 
+                            width: '100%', 
+                            color: s.bubbleType === 'impact' ? '#fff' : '#000',
+                          }}
+                        >
+                           <p className="font-black leading-[0.85] uppercase tracking-tighter" style={{ fontSize: `${s.fontSize}px` }}>
+                             {s.suggestedDialogue}
+                           </p>
+                        </div>
+                        
+                        {/* SELECTION GUIDES */}
+                        {activeBubbleIdx === idx && !isExporting && (
+                          <div className="absolute -inset-6 border border-black/10 border-dashed rounded-full animate-[spin_20s_linear_infinite] pointer-events-none"></div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full opacity-5 pointer-events-none select-none">
-                   <i className="fa-solid fa-pen-nib text-[12rem] mb-12 text-zinc-900"></i>
-                   <p className="text-5xl font-black italic uppercase tracking-tighter text-zinc-900">Studio Workspace</p>
-                </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
@@ -402,7 +417,7 @@ export default function App() {
       <style>{`
         @keyframes loading {
           0% { transform: translateX(-100%); }
-          100% { transform: translateX(400%); }
+          100% { transform: translateX(300%); }
         }
         .clip-path-scream { clip-path: polygon(0% 20%, 10% 0%, 25% 15%, 40% 0%, 55% 15%, 75% 0%, 90% 15%, 100% 30%, 92% 50%, 100% 70%, 90% 85%, 75% 100%, 55% 85%, 40% 100%, 25% 85%, 10% 100%, 0% 80%, 8% 50%, 0% 30%); }
         .clip-path-shock { clip-path: polygon(50% 0%, 55% 35%, 90% 10%, 65% 45%, 100% 50%, 65% 55%, 90% 90%, 55% 65%, 50% 100%, 45% 65%, 10% 90%, 35% 55%, 0% 50%, 35% 45%, 10% 10%, 45% 35%); }

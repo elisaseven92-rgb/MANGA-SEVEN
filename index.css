@@ -5,20 +5,20 @@
 
 body {
   font-family: 'Noto Sans JP', sans-serif;
-  @apply bg-[#09090b] text-[#e4e4e7];
+  @apply bg-[#000000] text-[#ffffff];
 }
 
 .manga-font {
   font-family: 'Bangers', cursive;
 }
 
-/* Painel estilo Mangá Studio Dark */
+/* Painel Noir Ultra */
 .manga-panel {
-  border: 1px solid #27272a;
-  @apply bg-[#18181b] shadow-[0px_4px_20px_rgba(0,0,0,0.5)] transition-all;
+  border: 1px solid #1a1a1a;
+  @apply bg-[#080808] transition-all;
 }
 
-/* Sliders Customizados Dark Mode */
+/* Sliders Estilo White Line */
 input[type="range"] {
   -webkit-appearance: none;
   width: 100%;
@@ -27,38 +27,36 @@ input[type="range"] {
 
 input[type="range"]::-webkit-slider-runnable-track {
   width: 100%;
-  height: 2px;
-  background: #3f3f46;
-  border-radius: 2px;
+  height: 1px;
+  background: #222;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  height: 14px;
-  width: 14px;
-  border-radius: 50%;
+  height: 12px;
+  width: 12px;
+  border-radius: 0;
   background: #ffffff;
   cursor: pointer;
   margin-top: -6px;
-  border: 2px solid #000;
-  box-shadow: 0 0 10px rgba(255,255,255,0.1);
+  border: 1px solid #000;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+  width: 2px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  @apply bg-black;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-white/10 rounded-full hover:bg-white/20;
+  @apply bg-zinc-800 hover:bg-zinc-600;
 }
 
 .halftone-bg {
-  background-image: radial-gradient(#1a1a1a 1px, transparent 0);
-  background-size: 8px 8px;
+  background-image: radial-gradient(#111 1px, transparent 0);
+  background-size: 10px 10px;
 }
 
 @keyframes glitch {
@@ -72,4 +70,8 @@ input[type="range"]::-webkit-slider-thumb {
 
 .animate-glitch-fast {
   animation: glitch 0.2s infinite linear alternate-reverse;
+}
+
+button {
+  @apply active:scale-95 transition-transform;
 }
