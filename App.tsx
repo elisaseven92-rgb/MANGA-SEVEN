@@ -24,7 +24,6 @@ export default function App() {
     const files = e.target.files;
     if (files) {
       const newImages: MangaImage[] = [];
-      // Limite alterado para 3
       const filesArray = Array.from(files).slice(0, 3 - sourceImages.length) as File[];
 
       for (const file of filesArray) {
@@ -110,7 +109,7 @@ export default function App() {
         backgroundColor: '#ffffff'
       });
       const link = document.createElement('a');
-      link.download = `manga-page-3panels-${Date.now()}.png`;
+      link.download = `manga-page-optimized-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
     } finally {
@@ -166,26 +165,55 @@ export default function App() {
     const count = sourceImages.length;
     if (count === 0) return null;
 
-    // Grid otimizado para 3 painéis
-    let gridClass = `grid gap-4 bg-black p-4 border-4 border-black h-full w-full transition-all ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`;
-    
-    if (count === 1) gridClass += " grid-cols-1";
-    else if (count === 2) gridClass += " grid-cols-1 grid-rows-2";
-    else if (count === 3) gridClass += " grid-cols-2 grid-rows-2"; // Primeira linha ocupada pelo primeiro quadro (col-span-2)
+    // Grid otimizado: Usamos grid-template-rows para dar mais espaço (1.5fr) ao topo no caso de 3 quadros
+    const gridStyle: React.CSSProperties = {
+      display: 'grid',
+      gap: '1rem',
+      backgroundColor: 'black',
+      padding: '1rem',
+      border: '4px solid black',
+      height: '100%',
+      width: '100%',
+      transition: 'all 0.3s ease',
+      overflow: activePanelIdx !== null ? 'visible' : 'hidden',
+    };
+
+    if (count === 1) {
+      gridStyle.gridTemplateColumns = '1fr';
+    } else if (count === 2) {
+      gridStyle.gridTemplateRows = '1fr 1fr';
+    } else if (count === 3) {
+      // Ajuste crucial: O topo (1.5fr) é maior que a base (1fr)
+      gridStyle.gridTemplateRows = '1.5fr 1fr';
+      gridStyle.gridTemplateColumns = '1fr 1fr';
+    }
 
     return (
-      <div className={gridClass} style={{ minHeight: '100%' }}>
+      <div style={gridStyle}>
         {sourceImages.map((img, i) => {
           const isActive = activePanelIdx === i;
-          let spanClass = `relative bg-white transition-all ${isActive ? 'z-50 overflow-visible ring-4 ring-black shadow-2xl scale-[1.01]' : 'overflow-hidden'}`;
           
-          // Lógica de destaque para 3 quadros: O primeiro é maior
-          if (count === 3 && i === 0) spanClass += " col-span-2 row-span-1";
+          // min-h-0 e min-w-0 impedem que o conteúdo interno force o quadro a crescer além do grid
+          let cellStyle: React.CSSProperties = {
+            position: 'relative',
+            backgroundColor: 'white',
+            overflow: isActive ? 'visible' : 'hidden',
+            transition: 'all 0.2s ease',
+            minHeight: 0, 
+            minWidth: 0,
+            zIndex: isActive ? 50 : 1,
+            boxShadow: isActive ? '0 20px 25px -5px rgb(0 0 0 / 0.1)' : 'none',
+            transform: isActive ? 'scale(1.01)' : 'none',
+          };
+          
+          if (count === 3 && i === 0) {
+            cellStyle.gridColumn = 'span 2';
+          }
           
           return (
-            <div key={img.id} className={spanClass}>
+            <div key={img.id} style={cellStyle}>
               {isActive && (
-                <div className="absolute inset-0 border-2 border-black/10 pointer-events-none z-10 bg-white/5"></div>
+                <div className="absolute inset-0 border-2 border-black/10 pointer-events-none z-10"></div>
               )}
               
               <img 
@@ -193,7 +221,8 @@ export default function App() {
                 alt={`Manga Panel ${i+1}`} 
                 className="w-full h-full object-contain grayscale contrast-125 transition-transform duration-75 origin-center pointer-events-none" 
                 style={{
-                  transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`
+                  transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`,
+                  display: 'block'
                 }}
               />
             </div>
@@ -217,7 +246,7 @@ export default function App() {
             <div className="flex justify-between items-center border-b-4 border-black pb-2">
               <div className="flex flex-col">
                 <h2 className="text-xl font-black uppercase italic tracking-tighter">Manga Composer</h2>
-                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Limite: 3 Quadros</span>
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Layout de 3 Quadros Otimizado</span>
               </div>
               <div className="flex gap-2">
                 <button 
@@ -234,7 +263,7 @@ export default function App() {
             {/* GESTÃO DE CENAS */}
             <div className="space-y-4">
               <h3 className="text-xs font-black uppercase border-b-2 border-gray-100 pb-1 flex items-center gap-2">
-                <i className="fa-solid fa-arrows-up-down-left-right"></i> Painéis da Página ({sourceImages.length}/3)
+                <i className="fa-solid fa-arrows-to-dot"></i> Ajuste de Cenas ({sourceImages.length}/3)
               </h3>
               <div className="grid grid-cols-1 gap-4">
                 {sourceImages.map((img, i) => (
@@ -245,13 +274,14 @@ export default function App() {
                       </div>
                       <div className="flex-grow space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase italic">Cena {i+1}</span>
+                          {/* // Fix: 'count' was not defined here. Replaced with 'sourceImages.length'. */}
+                          <span className="text-[10px] font-black uppercase italic">Quadro {i+1} {i === 0 && sourceImages.length === 3 ? '(Topo)' : ''}</span>
                           <div className="flex gap-2">
                             <button 
                               onClick={() => setActivePanelIdx(activePanelIdx === i ? null : i)}
                               className={`text-[9px] px-2 py-0.5 border-2 border-black font-black uppercase transition-all ${activePanelIdx === i ? 'bg-black text-white shadow-none' : 'bg-white text-black hover:bg-gray-100'}`}
                             >
-                              {activePanelIdx === i ? 'Concluir' : 'Ajustar'}
+                              {activePanelIdx === i ? 'Salvar' : 'Enquadrar'}
                             </button>
                             <button onClick={() => removeImage(img.id)} className="text-red-600 hover:scale-110 transition-transform p-1">
                               <i className="fa-solid fa-trash-can text-xs"></i>
@@ -262,7 +292,7 @@ export default function App() {
                           <div className="space-y-4 pt-3 animate-in slide-in-from-top-1 duration-200 border-t border-gray-200 mt-2">
                             <div className="space-y-1">
                               <div className="flex justify-between text-[9px] font-black uppercase italic">
-                                <span>Zoom</span>
+                                <span>Tamanho (Zoom)</span>
                                 <span>{img.zoom.toFixed(1)}x</span>
                               </div>
                               <input 
@@ -274,7 +304,7 @@ export default function App() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-1">
-                                <span className="text-[9px] font-black uppercase italic block text-center">Horizontal</span>
+                                <span className="text-[9px] font-black uppercase italic block text-center">Posição X</span>
                                 <input 
                                   type="range" min="-300" max="300" step="1" 
                                   value={img.offsetX} 
@@ -283,7 +313,7 @@ export default function App() {
                                 />
                               </div>
                               <div className="space-y-1">
-                                <span className="text-[9px] font-black uppercase italic block text-center">Vertical</span>
+                                <span className="text-[9px] font-black uppercase italic block text-center">Posição Y</span>
                                 <input 
                                   type="range" min="-300" max="300" step="1" 
                                   value={img.offsetY} 
@@ -298,25 +328,17 @@ export default function App() {
                     </div>
                   </div>
                 ))}
-                {sourceImages.length < 3 && (
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="h-16 border-2 border-dashed border-gray-300 flex items-center justify-center gap-2 cursor-pointer hover:border-black hover:text-black text-gray-400 transition-all font-black text-xs uppercase"
-                  >
-                    <i className="fa-solid fa-plus-circle"></i> Novo Quadro ({sourceImages.length}/3)
-                  </button>
-                )}
               </div>
             </div>
 
             {sourceImages.length > 0 && (
               <div className="space-y-4 pt-4 border-t-4 border-black">
                 <div className="flex justify-between items-center">
-                   <h3 className="text-sm font-black uppercase">Balões de Diálogo</h3>
-                   <button onClick={addManualBubble} className="bg-black text-white px-2 py-0.5 text-[8px] font-black uppercase italic">+ Novo</button>
+                   <h3 className="text-sm font-black uppercase">Diálogos</h3>
+                   <button onClick={addManualBubble} className="bg-black text-white px-2 py-0.5 text-[8px] font-black uppercase italic">+ Adicionar Balão</button>
                 </div>
                 
-                <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-3 max-h-[35vh] overflow-y-auto pr-2 custom-scrollbar">
                   {generation.suggestions.map((s, i) => (
                     <div key={i} className="border-2 border-black p-3 space-y-3 bg-white shadow-[3px_3px_0px_#000]">
                       <div className="grid grid-cols-5 gap-1">
@@ -331,25 +353,14 @@ export default function App() {
                       </div>
                       <textarea value={s.suggestedDialogue} onChange={e => updateSuggestion(i, 'suggestedDialogue', e.target.value)} className="w-full text-[10px] font-bold border-2 border-black p-1.5 h-12 resize-none focus:bg-yellow-50 outline-none" />
                       
-                      <div className="flex gap-4">
-                        <div className="flex-1 space-y-1">
-                          <label className="text-[7px] font-black uppercase">Tamanho</label>
-                          <input type="range" min="10" max="80" value={s.bubbleScale} onChange={e => updateSuggestion(i, 'bubbleScale', parseInt(e.target.value))} className="w-full accent-black h-1" />
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <label className="text-[7px] font-black uppercase">Rotação</label>
-                          <input type="range" min="0" max="360" value={s.tailAngle} onChange={e => updateSuggestion(i, 'tailAngle', parseInt(e.target.value))} className="w-full accent-black h-1" />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-100">
-                         <div className="flex flex-col gap-1">
-                            <span className="text-[6px] font-bold uppercase opacity-50 text-center">Posição X</span>
-                            <input type="range" min="0" max="100" value={s.position.x} onChange={e => updatePosition(i, parseInt(e.target.value), s.position.y)} className="w-full h-1 accent-black" />
+                      <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-1">
+                            <label className="text-[7px] font-black uppercase">Escala</label>
+                            <input type="range" min="10" max="80" value={s.bubbleScale} onChange={e => updateSuggestion(i, 'bubbleScale', parseInt(e.target.value))} className="w-full accent-black h-1" />
                          </div>
-                         <div className="flex flex-col gap-1">
-                            <span className="text-[6px] font-bold uppercase opacity-50 text-center">Posição Y</span>
-                            <input type="range" min="0" max="100" value={s.position.y} onChange={e => updatePosition(i, s.position.x, parseInt(e.target.value))} className="w-full h-1 accent-black" />
+                         <div className="space-y-1">
+                            <label className="text-[7px] font-black uppercase">Giro Rabicho</label>
+                            <input type="range" min="0" max="360" value={s.tailAngle} onChange={e => updateSuggestion(i, 'tailAngle', parseInt(e.target.value))} className="w-full accent-black h-1" />
                          </div>
                       </div>
                     </div>
@@ -367,7 +378,7 @@ export default function App() {
               {generation.isAnalyzing && (
                 <div className="absolute inset-0 z-[100] bg-white/95 flex flex-col items-center justify-center font-black uppercase italic animate-pulse">
                   <i className="fa-solid fa-wand-magic-sparkles text-3xl mb-4"></i>
-                  Organizando Mangá de 3 Cenas...
+                  Ajustando Proporções...
                 </div>
               )}
               
@@ -378,7 +389,7 @@ export default function App() {
                   <p className="text-[12px] font-bold tracking-[0.5em] mt-2">TRIAD EDITION</p>
                 </div>
               ) : (
-                <div className={`relative flex-grow bg-white border-2 border-black h-full ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
+                <div className={`relative flex-grow bg-white h-full ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
                   {renderMangaGrid()}
                   
                   {/* CAMADA DE BALÕES */}
