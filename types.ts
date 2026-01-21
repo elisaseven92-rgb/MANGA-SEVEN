@@ -18,6 +18,7 @@ export type BubbleType =
   | 'shojo-spark' | 'double-oval'| 'comic-boom'  | 'scroll'     | 'zig-zag';
 
 export interface SceneSuggestion {
+  id: string;
   panelNumber: number;
   description: string;
   suggestedDialogue: string;
@@ -31,12 +32,14 @@ export interface SceneSuggestion {
   bubbleScale: number; 
   bubbleType: BubbleType; 
   readingOrder: number;
+  zIndex: number;
   showTail?: boolean;
 }
 
 export interface GenerationState {
   isGenerating: boolean;
   isAnalyzing: boolean;
+  statusMessage: string;
   error: string | null;
   resultUrl: string | null;
   suggestions: SceneSuggestion[];

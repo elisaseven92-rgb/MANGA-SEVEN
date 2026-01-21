@@ -20,25 +20,23 @@ export async function analyzeMangaPage(
             },
           },
           {
-            text: `Aja como um Editor de Mangá Profissional.
-            Analise a composição da página e sugira balões de fala baseados no tom da cena.
+            text: `Aja como um Editor-Chefe de Mangá (Shonen Jump).
+            Analise a página de arte bruta e sugira balões de diálogo profissionais.
 
-            BIBLIOTECA DE ESTILOS DISPONÍVEL:
-            - 'speech': Padrão.
-            - 'scream': Intensidade/Grito.
-            - 'shock': Surpresa extrema.
-            - 'burst': Impacto sonoro.
+            BIBLIOTECA DE ESTILOS:
+            - 'speech': Diálogos normais.
+            - 'scream': Gritos de impacto.
+            - 'shock': Revelações chocantes.
             - 'thought': Monólogo interno.
-            - 'narrative': Explicação/Caixa.
-            - 'dripping': Horror/Desespero.
-            - 'mechanical': Robôs/Tecnologia.
-            - 'ice': Frieza/Sarcasmo.
-            - 'flower': Alegria/Romance.
+            - 'narrative': Caixas de tempo/lugar.
+            - 'fear': Momentos de tensão/horror.
+            - 'dripping': Desespero absoluto.
 
-            REGRAS:
-            1. Posicione os balões para não tapar os rostos dos personagens.
-            2. Use 'showTail: false' sempre.
-            3. A leitura deve ser da direita para a esquerda (padrão japonês).`,
+            REGRAS EDITORIAIS:
+            1. NÃO COBRIR os rostos ou expressões chaves.
+            2. Fluxo de leitura: Canto Superior Direito -> Canto Inferior Esquerdo.
+            3. Equilibre o uso de preto: balões de impacto ('burst') devem estar perto de áreas de muita ação.
+            4. Se a cena for silenciosa, use balões pequenos e 'whisper'.`,
           },
         ],
       },
@@ -72,7 +70,7 @@ export async function analyzeMangaPage(
       },
     });
 
-    return JSON.parse(response.text || "[]").sort((a: any, b: any) => a.readingOrder - b.readingOrder);
+    return JSON.parse(response.text || "[]");
   } catch (error) {
     console.error("Erro na análise profissional:", error);
     return [];
