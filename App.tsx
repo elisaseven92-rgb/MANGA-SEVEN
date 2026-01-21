@@ -60,7 +60,9 @@ export default function App() {
     setGeneration(prev => ({ ...prev, isAnalyzing: true }));
     try {
       const analysis = await analyzeMangaPage(base64, mime);
-      setGeneration(prev => ({ ...prev, suggestions: analysis, isAnalyzing: false }));
+      // Por padrão, não mostramos ponteiros na análise automática para respeitar o estilo limpo
+      const analysisWithTailControl = analysis.map(s => ({ ...s, showTail: false }));
+      setGeneration(prev => ({ ...prev, suggestions: analysisWithTailControl, isAnalyzing: false }));
     } catch (err) {
       setGeneration(prev => ({ ...prev, isAnalyzing: false }));
     }
@@ -72,12 +74,13 @@ export default function App() {
       description: "Novo Balão",
       suggestedDialogue: "Estou pronto para sair da vila. Depois de treinar por dez anos, sinto-me forte",
       position: { x: 50, y: 30 },
-      tailAngle: 0,
-      tailLength: 0,
+      tailAngle: 180,
+      tailLength: 20,
       fontSize: 18,
       bubbleScale: 40,
       bubbleType: 'speech',
-      readingOrder: generation.suggestions.length + 1
+      readingOrder: generation.suggestions.length + 1,
+      showTail: false // Padrão desativado
     };
     setGeneration(prev => ({ ...prev, suggestions: [...prev.suggestions, newSug] }));
   };
@@ -107,7 +110,7 @@ export default function App() {
       await new Promise(r => setTimeout(r, 400));
       const dataUrl = await toPng(exportRef.current, { pixelRatio: 2, backgroundColor: '#fff' });
       const link = document.createElement('a');
-      link.download = `seven-manga-splash-${Date.now()}.png`;
+      link.download = `seven-manga-pro-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
     } finally {
@@ -118,12 +121,12 @@ export default function App() {
 
   const getBubbleStyleClass = (type: BubbleType) => {
     switch (type) {
-      case 'thought': return 'rounded-[50%] border-dashed border-[5px] bubble-thought-bg shadow-[0_0_15px_rgba(0,0,0,0.1)]';
+      case 'thought': return 'rounded-[50%] border-dashed border-[5px] bubble-thought-bg';
       case 'scream': return 'clip-path-scream border-[8px] bg-white scale-110';
-      case 'whisper': return 'rounded-[40%] border-dotted border-[3px] border-gray-400 opacity-70';
+      case 'whisper': return 'rounded-[40%] border-dotted border-[3px] opacity-70';
       case 'unison': return 'rounded-[50%] border-[6px] border-black ring-4 ring-black ring-offset-[-8px]';
-      case 'electronic': return 'rounded-none border-[4px] border-black skew-x-[-5deg] animate-glitch';
-      case 'fear': return 'rounded-[50%] border-[4px] border-black animate-fear-wiggle opacity-90';
+      case 'electronic': return 'rounded-none border-[4px] border-black animate-glitch';
+      case 'fear': return 'rounded-[50%] border-[4px] border-black animate-fear-wiggle';
       case 'narrative': return 'rounded-none border-[4px] bg-white shadow-[6px_6px_0_black]';
       case 'impact': return 'rounded-lg border-[10px] bg-black text-white border-black';
       case 'poetic': return 'rounded-[40%_60%_70%_30%/50%_40%_60%_50%] border-[4px] border-black';
@@ -139,47 +142,40 @@ export default function App() {
           <div className="manga-panel p-6 bg-white border-4 border-black shadow-[8px_8px_0_black]">
             <div className="flex justify-between items-center border-b-4 border-black pb-3">
               <div>
-                <h2 className="text-xl font-black uppercase italic tracking-tighter">Manga Lettering</h2>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">10 Estilos Profissionais</p>
+                <h2 className="text-xl font-black uppercase italic tracking-tighter">Lettering Studio</h2>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Controle de Balões</p>
               </div>
-              <button 
-                onClick={() => fileInputRef.current?.click()} 
-                className="bg-black text-white px-4 py-2 text-[10px] font-black uppercase border-2 border-black hover:bg-white hover:text-black transition-all"
-              >
-                Upload Arte
-              </button>
+              <button onClick={() => fileInputRef.current?.click()} className="bg-black text-white px-4 py-2 text-[10px] font-black uppercase border-2 border-black hover:bg-white hover:text-black transition-all">Arte</button>
               <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
             </div>
 
             {sourceImages.length > 0 && (
               <div className="space-y-6 mt-4">
-                <div className="bg-gray-50 p-4 border-2 border-black">
-                  <h3 className="text-[10px] font-black uppercase mb-3">Enquadramento</h3>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                     <div className="col-span-2 space-y-1">
-                        <div className="flex justify-between text-[8px] font-black uppercase">
-                          <span>Zoom</span>
-                          <span>{sourceImages[0].zoom.toFixed(2)}x</span>
-                        </div>
-                        <input type="range" min="0.5" max="3" step="0.01" value={sourceImages[0].zoom} onChange={e => updateImageTransform(sourceImages[0].id, 'zoom', parseFloat(e.target.value))} className="w-full h-1 accent-black" />
-                     </div>
-                  </div>
-                </div>
-
                 <div className="pt-4 border-t-2 border-dashed border-black">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-[10px] font-black uppercase italic">Balões</h3>
-                    <button onClick={addManualBubble} className="bg-black text-white px-3 py-1 text-[9px] font-black uppercase shadow-[2px_2px_0_black]">+ Adicionar</button>
+                    <h3 className="text-[10px] font-black uppercase italic">Meus Balões</h3>
+                    <button onClick={addManualBubble} className="bg-black text-white px-3 py-1 text-[9px] font-black uppercase shadow-[2px_2px_0_black]">+ Novo</button>
                   </div>
                   
-                  <div className="space-y-6 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-6 max-h-[55vh] overflow-y-auto pr-2 custom-scrollbar">
                     {generation.suggestions.map((s, i) => (
                       <div key={i} className="border-2 border-black p-4 bg-white shadow-[4px_4px_0_black] space-y-3">
-                        <div className="flex justify-between">
-                           <span className="text-[9px] font-black uppercase bg-black text-white px-2 py-0.5">Balão {i+1}</span>
-                           <button onClick={() => setGeneration(p => ({...p, suggestions: p.suggestions.filter((_, idx) => idx !== i)}))} className="text-red-600">
-                              <i className="fa-solid fa-trash-can text-xs"></i>
-                           </button>
+                        <div className="flex justify-between items-center">
+                           <span className="text-[9px] font-black uppercase bg-black text-white px-2 py-0.5">#{i+1}</span>
+                           <div className="flex items-center gap-3">
+                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input 
+                                  type="checkbox" 
+                                  checked={s.showTail} 
+                                  onChange={e => updateSuggestion(i, 'showTail', e.target.checked)} 
+                                  className="w-3 h-3 accent-black" 
+                                />
+                                <span className="text-[9px] font-black uppercase">Rabicho</span>
+                              </label>
+                              <button onClick={() => setGeneration(p => ({...p, suggestions: p.suggestions.filter((_, idx) => idx !== i)}))} className="text-red-600">
+                                <i className="fa-solid fa-trash-can text-xs"></i>
+                              </button>
+                           </div>
                         </div>
 
                         <textarea 
@@ -202,13 +198,39 @@ export default function App() {
                           ))}
                         </div>
 
+                        {s.showTail && (
+                          <div className="space-y-1 pt-1">
+                            <div className="flex justify-between text-[8px] font-black uppercase">
+                              <span>Direção (Girar)</span>
+                              <span>{s.tailAngle}°</span>
+                            </div>
+                            <input 
+                              type="range" min="0" max="360" value={s.tailAngle} 
+                              onChange={e => updateSuggestion(i, 'tailAngle', parseInt(e.target.value))} 
+                              className="w-full h-1 accent-black" 
+                            />
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-2">
-                           <input type="range" min="10" max="80" value={s.bubbleScale} onChange={e => updateSuggestion(i, 'bubbleScale', parseInt(e.target.value))} className="w-full h-1 accent-black" />
-                           <input type="range" min="10" max="40" value={s.fontSize} onChange={e => updateSuggestion(i, 'fontSize', parseInt(e.target.value))} className="w-full h-1 accent-black" />
+                           <div className="space-y-1">
+                             <span className="text-[8px] font-black uppercase text-gray-400">Tamanho</span>
+                             <input type="range" min="10" max="80" value={s.bubbleScale} onChange={e => updateSuggestion(i, 'bubbleScale', parseInt(e.target.value))} className="w-full h-1 accent-black" />
+                           </div>
+                           <div className="space-y-1">
+                             <span className="text-[8px] font-black uppercase text-gray-400">Texto</span>
+                             <input type="range" min="8" max="40" value={s.fontSize} onChange={e => updateSuggestion(i, 'fontSize', parseInt(e.target.value))} className="w-full h-1 accent-black" />
+                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                           <input type="range" min="0" max="100" value={s.position.x} onChange={e => updatePosition(i, parseInt(e.target.value), s.position.y)} className="w-full h-1 accent-black" />
-                           <input type="range" min="0" max="100" value={s.position.y} onChange={e => updatePosition(i, s.position.x, parseInt(e.target.value))} className="w-full h-1 accent-black" />
+                           <div className="space-y-1">
+                             <span className="text-[8px] font-black uppercase text-gray-400">Pos X</span>
+                             <input type="range" min="0" max="100" value={s.position.x} onChange={e => updatePosition(i, parseInt(e.target.value), s.position.y)} className="w-full h-1 accent-black" />
+                           </div>
+                           <div className="space-y-1">
+                             <span className="text-[8px] font-black uppercase text-gray-400">Pos Y</span>
+                             <input type="range" min="0" max="100" value={s.position.y} onChange={e => updatePosition(i, s.position.x, parseInt(e.target.value))} className="w-full h-1 accent-black" />
+                           </div>
                         </div>
                       </div>
                     ))}
@@ -225,13 +247,13 @@ export default function App() {
             <div ref={exportRef} className="relative flex-grow bg-white w-full h-full border-2 border-black overflow-hidden shadow-2xl">
               {sourceImages.length === 0 ? (
                 <div className="flex-grow flex flex-col items-center justify-center opacity-10 border-4 border-dashed border-black/20 m-10">
-                  <i className="fa-solid fa-feather-pointed text-8xl mb-8"></i>
-                  <p className="text-4xl font-black italic uppercase tracking-tighter">Splash Frame</p>
-                  <p className="text-[12px] font-bold tracking-[0.6em] mt-3 uppercase text-center">Inicie seu projeto</p>
+                  <i className="fa-solid fa-pen-nib text-8xl mb-8"></i>
+                  <p className="text-4xl font-black italic uppercase tracking-tighter">Letreiramento</p>
+                  <p className="text-[12px] font-bold tracking-[0.5em] mt-3 uppercase">Selecione uma Imagem</p>
                 </div>
               ) : (
                 <div className="relative w-full h-full">
-                  <div className="w-full h-full bg-black">
+                  <div className="w-full h-full bg-black overflow-hidden">
                      <img 
                         src={sourceImages[0].url} 
                         className="w-full h-full grayscale object-cover"
@@ -242,7 +264,7 @@ export default function App() {
                       />
                   </div>
                   
-                  {/* CAMADA DE BALÕES SEM PONTEIROS */}
+                  {/* CAMADA DE BALÕES COM OPÇÃO DE RABICHO */}
                   <div className="absolute inset-0 pointer-events-none">
                     {generation.suggestions.map((s, idx) => (
                       <div 
@@ -250,18 +272,34 @@ export default function App() {
                         className="absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center" 
                         style={{ left: `${s.position.x}%`, top: `${s.position.y}%`, width: `${s.bubbleScale}%` }}
                       >
-                        <div 
-                          className={`bg-white p-6 flex items-center justify-center text-center transition-all ${getBubbleStyleClass(s.bubbleType)}`}
-                          style={{ 
-                            minHeight: '80px', 
-                            width: '100%', 
-                            color: s.bubbleType === 'impact' ? '#fff' : '#000',
-                            borderColor: s.bubbleType === 'whisper' ? '#9ca3af' : '#000'
-                          }}
-                        >
-                           <p className="font-black leading-[1.0] uppercase tracking-tighter" style={{ fontSize: `${s.fontSize}px` }}>
-                             {s.suggestedDialogue}
-                           </p>
+                        <div className="relative w-full">
+                          {/* O PONTEIRO (RABICHO) */}
+                          {s.showTail && (
+                            <div 
+                              className="absolute w-6 h-6 bg-white border-2 border-black z-[-1] origin-center"
+                              style={{ 
+                                top: '50%', 
+                                left: '50%',
+                                transform: `translate(-50%, -50%) rotate(${s.tailAngle}deg) translate(0, -60%) rotate(45deg)`,
+                                clipPath: 'polygon(0% 0%, 100% 0%, 0% 100%)',
+                                display: s.bubbleType === 'narrative' || s.bubbleType === 'impact' ? 'none' : 'block'
+                              }}
+                            />
+                          )}
+
+                          <div 
+                            className={`bg-white p-6 flex items-center justify-center text-center transition-all ${getBubbleStyleClass(s.bubbleType)}`}
+                            style={{ 
+                              minHeight: '80px', 
+                              width: '100%', 
+                              color: s.bubbleType === 'impact' ? '#fff' : '#000',
+                              borderColor: s.bubbleType === 'whisper' ? '#9ca3af' : '#000'
+                            }}
+                          >
+                             <p className="font-black leading-[1.0] uppercase tracking-tighter" style={{ fontSize: `${s.fontSize}px` }}>
+                               {s.suggestedDialogue}
+                             </p>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -277,8 +315,8 @@ export default function App() {
               disabled={isExporting} 
               className="mt-8 w-full max-w-[650px] py-5 bg-black text-white border-4 border-black font-black uppercase italic tracking-widest shadow-[10px_10px_0_#ccc] flex items-center justify-center gap-4 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
             >
-              {isExporting ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-file-export"></i>}
-              Exportar Arte Final
+              {isExporting ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-download"></i>}
+              Baixar Arte Finalizada
             </button>
           )}
         </div>

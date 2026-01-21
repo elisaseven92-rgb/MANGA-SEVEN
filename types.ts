@@ -35,6 +35,7 @@ export interface SceneSuggestion {
   bubbleScale: number; 
   bubbleType: BubbleType; 
   readingOrder: number;
+  showTail?: boolean; // Controle de visibilidade da seta
 }
 
 export interface GenerationState {
