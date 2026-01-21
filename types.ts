@@ -23,7 +23,13 @@ export type BubbleType =
   | 'narrative'   // Caixa Reta
   | 'whisper'     // Pontilhado
   | 'impact'      // Sólido Preto
-  | 'electronic'; // Digital
+  | 'electronic'  // Digital
+  | 'heart'       // Shojo Love
+  | 'fear'        // Medo/Trêmulo
+  | 'ice'         // Frio/Afiado
+  | 'radio'       // Transmissão
+  | 'flower'      // Fofo/Pétalas
+  | 'double';      // Impacto Duplo
 
 export interface SceneSuggestion {
   panelNumber: number;

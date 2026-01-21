@@ -18,8 +18,14 @@ const BUBBLE_STYLES: { type: BubbleType; icon: string; label: string }[] = [
   { type: 'bean', icon: 'fa-shapes', label: 'Orgânico' },
   { type: 'narrative', icon: 'fa-square', label: 'Caixa' },
   { type: 'whisper', icon: 'fa-comment-dots', label: 'Sussurro' },
-  { type: 'impact', icon: 'fa-circle-dot', label: 'Impacto' },
-  { type: 'electronic', icon: 'fa-bolt', label: 'Digital' },
+  { type: 'impact', icon: 'fa-circle-dot', label: 'Preto' },
+  { type: 'electronic', icon: 'fa-microchip', label: 'Digital' },
+  { type: 'heart', icon: 'fa-heart', label: 'Amor' },
+  { type: 'fear', icon: 'fa-ghost', label: 'Medo' },
+  { type: 'ice', icon: 'fa-icicles', label: 'Frio' },
+  { type: 'radio', icon: 'fa-radio', label: 'Rádio' },
+  { type: 'flower', icon: 'fa-seedling', label: 'Flor' },
+  { type: 'double', icon: 'fa-clone', label: 'Duplo' },
 ];
 
 export default function App() {
@@ -82,7 +88,7 @@ export default function App() {
       tailLength: 20,
       fontSize: 18,
       bubbleScale: 40,
-      bubbleType: 'scream',
+      bubbleType: 'speech',
       readingOrder: generation.suggestions.length + 1,
       showTail: false
     };
@@ -109,7 +115,7 @@ export default function App() {
       await new Promise(r => setTimeout(r, 600));
       const dataUrl = await toPng(exportRef.current, { pixelRatio: 3, backgroundColor: '#fff' });
       const link = document.createElement('a');
-      link.download = `seven-manga-shout-${Date.now()}.png`;
+      link.download = `seven-manga-pro-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
     } finally {
@@ -119,21 +125,27 @@ export default function App() {
 
   const getBubbleStyle = (type: BubbleType) => {
     switch (type) {
-      case 'speech': return 'rounded-[50%] border-[4px]';
+      case 'speech': return 'rounded-[50%] border-[5px]';
       case 'scream': return 'clip-path-scream border-[6px] bg-white';
       case 'shock': return 'clip-path-shock border-[5px] bg-white';
       case 'burst': return 'clip-path-burst border-[8px] bg-white';
-      case 'thought': return 'rounded-[50%] border-dashed border-[4px]';
-      case 'soft-rect': return 'rounded-[28px] border-[4px]';
-      case 'trapezoid': return 'rounded-[4px] border-[4px] skew-x-[-4deg]';
+      case 'thought': return 'rounded-[50%] border-dashed border-[5px]';
+      case 'soft-rect': return 'rounded-[28px] border-[5px]';
+      case 'trapezoid': return 'rounded-[4px] border-[5px] skew-x-[-4deg]';
       case 'starburst': return 'clip-path-star border-[5px] bg-white';
-      case 'capsule': return 'rounded-full border-[4px] px-10';
-      case 'bean': return 'rounded-[40%_60%_70%_30%/50%_40%_60%_50%] border-[4px]';
-      case 'narrative': return 'rounded-none border-[3px] bg-white shadow-[6px_6px_0_black]';
+      case 'capsule': return 'rounded-full border-[5px] px-10';
+      case 'bean': return 'rounded-[40%_60%_70%_30%/50%_40%_60%_50%] border-[5px]';
+      case 'narrative': return 'rounded-none border-[4px] bg-white shadow-[6px_6px_0_black]';
       case 'whisper': return 'rounded-[50%] border-dotted border-[3px] border-gray-400';
       case 'impact': return 'rounded-lg border-[10px] bg-black text-white border-black';
       case 'electronic': return 'rounded-none border-[4px] border-black animate-glitch-fast';
-      default: return 'rounded-[50%] border-[4px]';
+      case 'heart': return 'clip-path-heart border-[5px] bg-white';
+      case 'fear': return 'clip-path-fear border-[4px] bg-white';
+      case 'ice': return 'clip-path-ice border-[5px] bg-white';
+      case 'radio': return 'clip-path-radio border-[5px] bg-white';
+      case 'flower': return 'clip-path-flower border-[5px] bg-white';
+      case 'double': return 'rounded-[50%] border-[8px] outline outline-2 outline-black bg-white';
+      default: return 'rounded-[50%] border-[5px]';
     }
   };
 
@@ -142,24 +154,24 @@ export default function App() {
   return (
     <Layout>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* PAINEL DE CONTROLE */}
-        <div className="lg:col-span-5 space-y-6 no-print">
+        {/* PAINEL DE CONTROLE EXPANDIDO */}
+        <div className="lg:col-span-4 space-y-6 no-print">
           <div className="manga-panel p-6 bg-white border-4 border-black shadow-[8px_8px_0_black]">
             <div className="flex justify-between items-center mb-8 border-b-2 border-black pb-4">
-              <h2 className="text-sm font-black uppercase tracking-widest italic">Estúdio de Grito</h2>
+              <h2 className="text-xs font-black uppercase tracking-widest italic">Biblioteca de Estilos</h2>
               <button 
                 onClick={addManualBubble} 
-                className="bg-black text-white px-5 py-1.5 text-[10px] font-black uppercase tracking-widest border-2 border-black hover:bg-white hover:text-black transition-all"
+                className="bg-black text-white px-4 py-1 text-[10px] font-black uppercase tracking-widest border-2 border-black hover:bg-white hover:text-black transition-all"
               >
-                + NOVO BALÃO
+                + ADD
               </button>
             </div>
 
             {sourceImages.length === 0 ? (
                <div className="py-20 text-center border-4 border-dotted border-gray-300 rounded-xl flex flex-col items-center">
-                  <i className="fa-solid fa-volume-high text-4xl mb-4 text-gray-300"></i>
-                  <p className="text-[11px] font-black uppercase text-gray-400 mb-6">Insira a cena para letreiramento</p>
-                  <button onClick={() => fileInputRef.current?.click()} className="bg-black text-white px-8 py-3 text-[12px] font-black uppercase">Fazer Upload</button>
+                  <i className="fa-solid fa-wand-magic-sparkles text-4xl mb-4 text-gray-300"></i>
+                  <p className="text-[10px] font-black uppercase text-gray-400 mb-6">Importe sua arte</p>
+                  <button onClick={() => fileInputRef.current?.click()} className="bg-black text-white px-8 py-3 text-[12px] font-black uppercase">Upload</button>
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                </div>
             ) : (
@@ -170,7 +182,7 @@ export default function App() {
                     <button 
                       key={i}
                       onClick={() => setActiveBubbleIdx(i)}
-                      className={`min-w-[44px] h-[44px] border-2 border-black flex items-center justify-center font-black text-sm transition-all shadow-[2px_2px_0_black] ${activeBubbleIdx === i ? 'bg-black text-white scale-105' : 'bg-white text-black'}`}
+                      className={`min-w-[38px] h-[38px] border-2 border-black flex items-center justify-center font-black text-xs transition-all ${activeBubbleIdx === i ? 'bg-black text-white scale-110 shadow-md' : 'bg-white text-black opacity-60'}`}
                     >
                       {i + 1}
                     </button>
@@ -179,13 +191,13 @@ export default function App() {
 
                 {currentBubble && (
                   <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    {/* GRADE DE ESTILOS */}
-                    <div className="grid grid-cols-5 sm:grid-cols-7 gap-2">
+                    {/* GRADE DE ESTILOS (5 COLUNAS PARA CABER TODOS) */}
+                    <div className="grid grid-cols-5 gap-2">
                       {BUBBLE_STYLES.map(style => (
                         <button 
                           key={style.type}
                           onClick={() => updateActiveBubble('bubbleType', style.type)}
-                          className={`aspect-square border-2 border-black flex items-center justify-center text-lg transition-all ${currentBubble.bubbleType === style.type ? 'bg-black text-white scale-110 shadow-lg z-10' : 'bg-white hover:bg-gray-50 opacity-50'}`}
+                          className={`aspect-square border-2 border-black flex items-center justify-center text-sm transition-all ${currentBubble.bubbleType === style.type ? 'bg-black text-white scale-110 shadow-lg z-10' : 'bg-white hover:bg-gray-50 opacity-40'}`}
                           title={style.label}
                         >
                           <i className={`fa-solid ${style.icon}`}></i>
@@ -193,48 +205,45 @@ export default function App() {
                       ))}
                     </div>
 
-                    {/* TEXT AREA */}
                     <div className="border-4 border-black p-4 bg-gray-50">
                       <textarea 
                         value={currentBubble.suggestedDialogue} 
                         onChange={e => updateActiveBubble('suggestedDialogue', e.target.value)} 
-                        className="w-full bg-transparent text-sm font-black uppercase resize-none h-24 focus:outline-none"
-                        placeholder="ESCREVA O GRITO..."
+                        className="w-full bg-transparent text-xs font-black uppercase resize-none h-24 focus:outline-none"
+                        placeholder="TEXTO DO BALÃO..."
                       />
                     </div>
 
-                    {/* SLIDERS */}
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-tighter">Escala</label>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[9px] font-black uppercase"><span>Escala</span><span>{currentBubble.bubbleScale}%</span></div>
                         <input type="range" min="15" max="95" value={currentBubble.bubbleScale} onChange={e => updateActiveBubble('bubbleScale', parseInt(e.target.value))} />
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-tighter">Rotação Balão</label>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[9px] font-black uppercase"><span>Rotação</span><span>{currentBubble.tailAngle}°</span></div>
                         <input type="range" min="-180" max="180" value={currentBubble.tailAngle} onChange={e => updateActiveBubble('tailAngle', parseInt(e.target.value))} />
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-tighter">Horizontal (X)</label>
-                        <input type="range" min="0" max="100" value={currentBubble.position.x} onChange={e => updateActivePosition(parseInt(e.target.value), currentBubble.position.y)} />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black uppercase">Eixo X</label>
+                          <input type="range" min="0" max="100" value={currentBubble.position.x} onChange={e => updateActivePosition(parseInt(e.target.value), currentBubble.position.y)} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black uppercase">Eixo Y</label>
+                          <input type="range" min="0" max="100" value={currentBubble.position.y} onChange={e => updateActivePosition(currentBubble.position.x, parseInt(e.target.value))} />
+                        </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-tighter">Vertical (Y)</label>
-                        <input type="range" min="0" max="100" value={currentBubble.position.y} onChange={e => updateActivePosition(currentBubble.position.x, parseInt(e.target.value))} />
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[9px] font-black uppercase"><span>Fonte</span><span>{currentBubble.fontSize}px</span></div>
+                        <input type="range" min="8" max="80" value={currentBubble.fontSize} onChange={e => updateActiveBubble('fontSize', parseInt(e.target.value))} />
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-tighter">Tamanho Fonte</label>
-                        <input type="range" min="8" max="70" value={currentBubble.fontSize} onChange={e => updateActiveBubble('fontSize', parseInt(e.target.value))} />
-                      </div>
-
-                      <div className="flex items-center justify-end">
-                        <button onClick={() => setGeneration(p => ({...p, suggestions: p.suggestions.filter((_, idx) => idx !== activeBubbleIdx)}))} className="text-red-600 font-black text-[9px] uppercase hover:underline">
-                          <i className="fa-solid fa-trash-can mr-1"></i> Excluir
-                        </button>
-                      </div>
+                      <button onClick={() => setGeneration(p => ({...p, suggestions: p.suggestions.filter((_, idx) => idx !== activeBubbleIdx)}))} className="text-red-600 font-black text-[9px] uppercase hover:underline text-right">
+                        <i className="fa-solid fa-trash-can mr-1"></i> Remover Balão
+                      </button>
                     </div>
                   </div>
                 )}
@@ -243,15 +252,15 @@ export default function App() {
           </div>
 
           {sourceImages.length > 0 && (
-            <button onClick={handleDownload} disabled={isExporting} className="w-full bg-black text-white py-5 font-black uppercase italic tracking-widest shadow-[8px_8px_0_#ccc] flex items-center justify-center gap-3 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-              {isExporting ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-cloud-arrow-down"></i>}
-              Baixar PNG HD
+            <button onClick={handleDownload} disabled={isExporting} className="w-full bg-black text-white py-5 font-black uppercase italic tracking-widest shadow-[8px_8px_0_#ccc] flex items-center justify-center gap-3 hover:translate-x-1 hover:translate-y-1 transition-all">
+              {isExporting ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-file-export"></i>}
+              Exportar PNG
             </button>
           )}
         </div>
 
         {/* ÁREA DE VISUALIZAÇÃO */}
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-8">
           <div className="manga-panel bg-white p-6 relative halftone-bg min-h-[600px]">
             <div ref={exportRef} className="relative aspect-[1/1.41] bg-white w-full border-4 border-black overflow-hidden shadow-2xl">
               {sourceImages.length > 0 ? (
@@ -259,7 +268,7 @@ export default function App() {
                   <img 
                     src={sourceImages[0].url} 
                     className="w-full h-full grayscale object-cover"
-                    style={{ filter: 'contrast(1.3) brightness(1.1)' }}
+                    style={{ filter: 'contrast(1.25) brightness(1.1) saturate(0)' }}
                   />
                   
                   <div className="absolute inset-0 pointer-events-none">
@@ -294,8 +303,8 @@ export default function App() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full opacity-10">
-                   <i className="fa-solid fa-microphone-lines text-8xl mb-4"></i>
-                   <p className="text-3xl font-black italic uppercase">Modo Grito Ativado</p>
+                   <i className="fa-solid fa-pencil text-8xl mb-4"></i>
+                   <p className="text-3xl font-black italic uppercase">Editor de Letreiramento</p>
                 </div>
               )}
             </div>
@@ -323,6 +332,21 @@ export default function App() {
         }
         .clip-path-star {
           clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+        }
+        .clip-path-heart {
+          clip-path: polygon(50% 15%, 75% 0%, 100% 25%, 50% 100%, 0% 25%, 25% 0%);
+        }
+        .clip-path-fear {
+          clip-path: polygon(0% 10%, 10% 0%, 20% 15%, 30% 5%, 40% 15%, 50% 0%, 60% 15%, 70% 5%, 80% 15%, 90% 0%, 100% 10%, 95% 30%, 100% 50%, 95% 70%, 100% 90%, 90% 100%, 80% 85%, 70% 95%, 60% 85%, 50% 100%, 40% 85%, 30% 95%, 20% 85%, 10% 100%, 0% 90%, 5% 70%, 0% 50%, 5% 30%);
+        }
+        .clip-path-ice {
+          clip-path: polygon(50% 0%, 70% 20%, 100% 10%, 85% 50%, 100% 90%, 70% 80%, 50% 100%, 30% 80%, 0% 90%, 15% 50%, 0% 10%, 30% 20%);
+        }
+        .clip-path-radio {
+          clip-path: polygon(0% 0%, 40% 0%, 50% 15%, 60% 0%, 100% 0%, 100% 40%, 85% 50%, 100% 60%, 100% 100%, 60% 100%, 50% 85%, 40% 100%, 0% 100%, 0% 60%, 15% 50%, 0% 40%);
+        }
+        .clip-path-flower {
+          clip-path: polygon(50% 0%, 65% 10%, 85% 0%, 95% 20%, 100% 40%, 90% 55%, 100% 70%, 95% 90%, 75% 100%, 50% 90%, 25% 100%, 5% 90%, 0% 70%, 10% 55%, 0% 40%, 5% 20%, 25% 0%, 35% 10%);
         }
       `}</style>
     </Layout>
