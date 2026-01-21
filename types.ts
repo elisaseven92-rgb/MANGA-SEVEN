@@ -13,13 +13,13 @@ export type BubbleType =
   | 'speech' 
   | 'thought' 
   | 'scream' 
-  | 'narrative' 
   | 'whisper' 
-  | 'wavy' 
+  | 'unison' 
+  | 'electronic' 
+  | 'fear' 
+  | 'narrative' 
   | 'impact' 
-  | 'organic' 
-  | 'sharp'
-  | 'modern';
+  | 'poetic';
 
 export interface SceneSuggestion {
   panelNumber: number;
