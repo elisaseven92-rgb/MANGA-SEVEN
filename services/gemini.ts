@@ -10,7 +10,6 @@ export async function analyzeMangaPage(
 
   try {
     const response = await ai.models.generateContent({
-      // Use gemini-3-pro-preview for tasks requiring advanced reasoning and multimodal analysis.
       model: 'gemini-3-pro-preview',
       contents: {
         parts: [
@@ -21,30 +20,21 @@ export async function analyzeMangaPage(
             },
           },
           {
-            text: `Aja como um Editor-Chefe de Mangá e Especialista em Letreiramento.
-            Sua tarefa é dar vida a esta página através de balões de fala ou caixas de narração.
+            text: `Aja como um Editor de Mangá Profissional.
+            Sua tarefa é analisar a arte e sugerir balões de fala usando os novos tipos baseados em modelos geométricos.
 
-            DIRETRIZES:
-            1. SE HOUVER PERSONAGENS: Identifique quem está falando e crie diálogos que combinem com a expressão deles.
-            2. TIPOS DE BALÃO (bubbleType):
-               - 'speech': Fala normal (padrão).
-               - 'thought': Pensamentos ou monólogo interno (nuvem).
-               - 'scream': Grito, choque ou intensidade (espinhoso).
-               - 'narrative': Narração do autor ou tempo (caixa retangular).
-               - 'whisper': Sussurro ou fala baixa (pontilhado).
-            3. POSICIONAMENTO: Coloque os balões em áreas vazias (espaço negativo).
-            4. ORDEM DE LEITURA: Padrão japonês (Direita para Esquerda, Cima para Baixo).
+            TYPES MAPPING:
+            - 'speech': Fala normal (oval).
+            - 'scream': Grito ou choque (explosão).
+            - 'thought': Pensamentos (nuvem).
+            - 'soft-rect': Fala calma/explanação (caixa arredondada).
+            - 'trapezoid': Fala assertiva (caixa angular).
+            - 'starburst': Momento de ação intensa ou surpresa.
+            - 'capsule': Diálogos longos.
+            - 'bean': Fala orgânica ou cômica.
+            - 'narrative': Narração/Contexto (caixa preta ou retangular).
 
-            Retorne um JSON array rigoroso com objetos contendo:
-            - panelNumber: Número do quadro.
-            - suggestedDialogue: O texto (em Português).
-            - position: {x, y} em porcentagem (0-100).
-            - tailAngle: Ângulo (0-360) para o rabicho.
-            - tailLength: Comprimento do rabicho.
-            - fontSize: Tamanho sugerido (12-20).
-            - bubbleScale: Largura sugerida (20-60).
-            - bubbleType: Escolha entre 'speech', 'thought', 'scream', 'narrative', 'whisper'.
-            - readingOrder: Ordem sequencial.`,
+            Retorne um JSON array rigoroso.`,
           },
         ],
       },

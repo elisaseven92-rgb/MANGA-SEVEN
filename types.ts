@@ -10,16 +10,18 @@ export interface MangaImage {
 }
 
 export type BubbleType = 
-  | 'speech' 
-  | 'thought' 
-  | 'scream' 
-  | 'whisper' 
-  | 'unison' 
-  | 'electronic' 
-  | 'fear' 
-  | 'narrative' 
-  | 'impact' 
-  | 'poetic';
+  | 'speech'      // Oval (Imagem 1)
+  | 'scream'      // Explosão (Imagem 2)
+  | 'thought'     // Nuvem (Imagem 3)
+  | 'soft-rect'   // Retângulo Arredondado (Imagem 6)
+  | 'trapezoid'   // Trapezoide (Imagem 7)
+  | 'starburst'   // Estrela de Ação (Imagem 9)
+  | 'capsule'     // Cápsula Larga (Imagem 10)
+  | 'bean'        // Formato Feijão/Orgânico (Imagem 13)
+  | 'narrative'   // Caixa Reta (Imagem 14)
+  | 'whisper'     // Pontilhado
+  | 'impact'      // Sólido Preto
+  | 'electronic'; // Tremido/Raio
 
 export interface SceneSuggestion {
   panelNumber: number;
@@ -35,7 +37,7 @@ export interface SceneSuggestion {
   bubbleScale: number; 
   bubbleType: BubbleType; 
   readingOrder: number;
-  showTail?: boolean; // Controle de visibilidade da seta
+  showTail?: boolean;
 }
 
 export interface GenerationState {
