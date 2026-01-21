@@ -21,20 +21,18 @@ export async function analyzeMangaPage(
           },
           {
             text: `Aja como um Editor de Mangá Profissional.
-            Sua tarefa é analisar a arte e sugerir balões de fala usando os novos tipos baseados em modelos geométricos.
+            Sua tarefa é analisar a arte e sugerir balões de fala, focando especialmente em gritos e efeitos se a cena for de ação.
 
             TYPES MAPPING:
             - 'speech': Fala normal (oval).
-            - 'scream': Grito ou choque (explosão).
+            - 'scream': Grito agressivo (bordas irregulares).
+            - 'shock': Grito de surpresa ou choque (estilo flash/estrelado).
+            - 'burst': Impacto ou fala poderosa (bordas grossas e angulares).
             - 'thought': Pensamentos (nuvem).
-            - 'soft-rect': Fala calma/explanação (caixa arredondada).
-            - 'trapezoid': Fala assertiva (caixa angular).
-            - 'starburst': Momento de ação intensa ou surpresa.
-            - 'capsule': Diálogos longos.
-            - 'bean': Fala orgânica ou cômica.
-            - 'narrative': Narração/Contexto (caixa preta ou retangular).
+            - 'soft-rect': Fala calma/explanação.
+            - 'narrative': Narração.
 
-            Retorne um JSON array rigoroso.`,
+            Retorne um JSON array rigoroso. Não inclua setas (showTail deve ser false).`,
           },
         ],
       },

@@ -10,18 +10,20 @@ export interface MangaImage {
 }
 
 export type BubbleType = 
-  | 'speech'      // Oval (Imagem 1)
-  | 'scream'      // Explosão (Imagem 2)
-  | 'thought'     // Nuvem (Imagem 3)
-  | 'soft-rect'   // Retângulo Arredondado (Imagem 6)
-  | 'trapezoid'   // Trapezoide (Imagem 7)
-  | 'starburst'   // Estrela de Ação (Imagem 9)
-  | 'capsule'     // Cápsula Larga (Imagem 10)
-  | 'bean'        // Formato Feijão/Orgânico (Imagem 13)
-  | 'narrative'   // Caixa Reta (Imagem 14)
+  | 'speech'      // Oval
+  | 'scream'      // Grito Agressivo
+  | 'shock'       // Grito de Choque (Flash)
+  | 'burst'       // Explosão de Impacto
+  | 'thought'     // Nuvem
+  | 'soft-rect'   // Retângulo Arredondado
+  | 'trapezoid'   // Trapezoide
+  | 'starburst'   // Estrela de Ação
+  | 'capsule'     // Cápsula Larga
+  | 'bean'        // Formato Orgânico
+  | 'narrative'   // Caixa Reta
   | 'whisper'     // Pontilhado
   | 'impact'      // Sólido Preto
-  | 'electronic'; // Tremido/Raio
+  | 'electronic'; // Digital
 
 export interface SceneSuggestion {
   panelNumber: number;
