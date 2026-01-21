@@ -24,7 +24,8 @@ export default function App() {
     const files = e.target.files;
     if (files) {
       const newImages: MangaImage[] = [];
-      const filesArray = Array.from(files).slice(0, 4 - sourceImages.length) as File[];
+      // Limite alterado para 3
+      const filesArray = Array.from(files).slice(0, 3 - sourceImages.length) as File[];
 
       for (const file of filesArray) {
         const base64 = await new Promise<string>((resolve) => {
@@ -109,7 +110,7 @@ export default function App() {
         backgroundColor: '#ffffff'
       });
       const link = document.createElement('a');
-      link.download = `manga-page-${Date.now()}.png`;
+      link.download = `manga-page-3panels-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
     } finally {
@@ -165,22 +166,21 @@ export default function App() {
     const count = sourceImages.length;
     if (count === 0) return null;
 
-    // overflow-visible é CRUCIAL aqui para que a imagem não seja cortada quando movida para fora do quadro durante ajuste
+    // Grid otimizado para 3 painéis
     let gridClass = `grid gap-4 bg-black p-4 border-4 border-black h-full w-full transition-all ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`;
     
     if (count === 1) gridClass += " grid-cols-1";
     else if (count === 2) gridClass += " grid-cols-1 grid-rows-2";
-    else if (count === 3) gridClass += " grid-cols-2 grid-rows-2";
-    else if (count === 4) gridClass += " grid-cols-2 grid-rows-2";
+    else if (count === 3) gridClass += " grid-cols-2 grid-rows-2"; // Primeira linha ocupada pelo primeiro quadro (col-span-2)
 
     return (
       <div className={gridClass} style={{ minHeight: '100%' }}>
         {sourceImages.map((img, i) => {
           const isActive = activePanelIdx === i;
-          // 'object-contain' mantém a imagem inteira visível. overflow-visible no isActive evita o corte.
           let spanClass = `relative bg-white transition-all ${isActive ? 'z-50 overflow-visible ring-4 ring-black shadow-2xl scale-[1.01]' : 'overflow-hidden'}`;
           
-          if (count === 3 && i === 0) spanClass += " col-span-2";
+          // Lógica de destaque para 3 quadros: O primeiro é maior
+          if (count === 3 && i === 0) spanClass += " col-span-2 row-span-1";
           
           return (
             <div key={img.id} className={spanClass}>
@@ -190,7 +190,7 @@ export default function App() {
               
               <img 
                 src={img.url} 
-                alt="Manga Panel" 
+                alt={`Manga Panel ${i+1}`} 
                 className="w-full h-full object-contain grayscale contrast-125 transition-transform duration-75 origin-center pointer-events-none" 
                 style={{
                   transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`
@@ -215,9 +215,18 @@ export default function App() {
         <div className="lg:col-span-4 no-print space-y-6">
           <div className="manga-panel p-5 bg-white space-y-6">
             <div className="flex justify-between items-center border-b-4 border-black pb-2">
-              <h2 className="text-xl font-black uppercase italic tracking-tighter">Manga Composer</h2>
+              <div className="flex flex-col">
+                <h2 className="text-xl font-black uppercase italic tracking-tighter">Manga Composer</h2>
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Limite: 3 Quadros</span>
+              </div>
               <div className="flex gap-2">
-                <button onClick={() => fileInputRef.current?.click()} className="bg-black text-white px-3 py-1 text-[10px] font-black uppercase hover:bg-gray-800 transition-colors">+ Adicionar</button>
+                <button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  disabled={sourceImages.length >= 3}
+                  className={`px-3 py-1 text-[10px] font-black uppercase transition-colors ${sourceImages.length >= 3 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-black text-white hover:bg-gray-800'}`}
+                >
+                  + Adicionar
+                </button>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" multiple />
               </div>
             </div>
@@ -225,7 +234,7 @@ export default function App() {
             {/* GESTÃO DE CENAS */}
             <div className="space-y-4">
               <h3 className="text-xs font-black uppercase border-b-2 border-gray-100 pb-1 flex items-center gap-2">
-                <i className="fa-solid fa-arrows-up-down-left-right"></i> Ajustar Enquadramento
+                <i className="fa-solid fa-arrows-up-down-left-right"></i> Painéis da Página ({sourceImages.length}/3)
               </h3>
               <div className="grid grid-cols-1 gap-4">
                 {sourceImages.map((img, i) => (
@@ -242,7 +251,7 @@ export default function App() {
                               onClick={() => setActivePanelIdx(activePanelIdx === i ? null : i)}
                               className={`text-[9px] px-2 py-0.5 border-2 border-black font-black uppercase transition-all ${activePanelIdx === i ? 'bg-black text-white shadow-none' : 'bg-white text-black hover:bg-gray-100'}`}
                             >
-                              {activePanelIdx === i ? 'Confirmar' : 'Ajustar'}
+                              {activePanelIdx === i ? 'Concluir' : 'Ajustar'}
                             </button>
                             <button onClick={() => removeImage(img.id)} className="text-red-600 hover:scale-110 transition-transform p-1">
                               <i className="fa-solid fa-trash-can text-xs"></i>
@@ -265,7 +274,7 @@ export default function App() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-1">
-                                <span className="text-[9px] font-black uppercase italic block text-center">Desloc. X</span>
+                                <span className="text-[9px] font-black uppercase italic block text-center">Horizontal</span>
                                 <input 
                                   type="range" min="-300" max="300" step="1" 
                                   value={img.offsetX} 
@@ -274,7 +283,7 @@ export default function App() {
                                 />
                               </div>
                               <div className="space-y-1">
-                                <span className="text-[9px] font-black uppercase italic block text-center">Desloc. Y</span>
+                                <span className="text-[9px] font-black uppercase italic block text-center">Vertical</span>
                                 <input 
                                   type="range" min="-300" max="300" step="1" 
                                   value={img.offsetY} 
@@ -283,22 +292,18 @@ export default function App() {
                                 />
                               </div>
                             </div>
-                            <div className="bg-blue-50 p-2 text-[8px] font-bold border border-blue-200 rounded text-blue-900 leading-tight">
-                              <i className="fa-solid fa-eye mr-1"></i>
-                              SEM CORTES: A imagem agora é mantida inteira (contain). Durante o ajuste, habilitamos a visão livre para que você veja a imagem transbordando o quadro sem ser cortada.
-                            </div>
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
                 ))}
-                {sourceImages.length < 4 && (
+                {sourceImages.length < 3 && (
                   <button 
                     onClick={() => fileInputRef.current?.click()}
                     className="h-16 border-2 border-dashed border-gray-300 flex items-center justify-center gap-2 cursor-pointer hover:border-black hover:text-black text-gray-400 transition-all font-black text-xs uppercase"
                   >
-                    <i className="fa-solid fa-plus-circle"></i> Novo Quadro
+                    <i className="fa-solid fa-plus-circle"></i> Novo Quadro ({sourceImages.length}/3)
                   </button>
                 )}
               </div>
@@ -357,13 +362,12 @@ export default function App() {
 
         {/* ÁREA DA FOLHA DE MANGÁ */}
         <div className="lg:col-span-8 flex flex-col items-center">
-          {/* O overflow-visible no container pai (página) quando em modo de ajuste é o segredo para não cortar a imagem */}
           <div className={`manga-panel bg-white p-8 min-h-[900px] w-full max-w-[750px] relative halftone-bg flex flex-col border-4 border-black transition-all ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
             <div ref={exportRef} className={`relative flex-grow bg-white w-full h-full flex flex-col ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
               {generation.isAnalyzing && (
                 <div className="absolute inset-0 z-[100] bg-white/95 flex flex-col items-center justify-center font-black uppercase italic animate-pulse">
                   <i className="fa-solid fa-wand-magic-sparkles text-3xl mb-4"></i>
-                  Organizando Página...
+                  Organizando Mangá de 3 Cenas...
                 </div>
               )}
               
@@ -371,7 +375,7 @@ export default function App() {
                 <div className="flex-grow flex flex-col items-center justify-center opacity-10 select-none border-4 border-dashed border-black m-4">
                   <i className="fa-solid fa-layer-group text-9xl mb-6"></i>
                   <p className="text-3xl font-black uppercase italic tracking-tighter">Seven Mangá</p>
-                  <p className="text-[12px] font-bold tracking-[0.5em] mt-2">MONOCHROME STUDIO</p>
+                  <p className="text-[12px] font-bold tracking-[0.5em] mt-2">TRIAD EDITION</p>
                 </div>
               ) : (
                 <div className={`relative flex-grow bg-white border-2 border-black h-full ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
