@@ -15,20 +15,13 @@ const BUBBLE_STYLES: { type: BubbleType; icon: string; category: string }[] = [
   { type: 'burst', icon: 'fa-explosion', category: 'Action' },
   { type: 'starburst', icon: 'fa-bahai', category: 'Action' },
   { type: 'comic-boom', icon: 'fa-meteor', category: 'Action' },
-  { type: 'double', icon: 'fa-clone', category: 'Action' },
   { type: 'thought', icon: 'fa-cloud', category: 'Emotion' },
   { type: 'whisper', icon: 'fa-comment-dots', category: 'Emotion' },
   { type: 'heart', icon: 'fa-heart', category: 'Emotion' },
   { type: 'fear', icon: 'fa-ghost', category: 'Emotion' },
   { type: 'dripping', icon: 'fa-droplet', category: 'Emotion' },
-  { type: 'cloud-puffy', icon: 'fa-cloud-meatball', category: 'Emotion' },
-  { type: 'ice', icon: 'fa-icicles', category: 'Special' },
-  { type: 'radio', icon: 'fa-radio', category: 'Special' },
   { type: 'electronic', icon: 'fa-microchip', category: 'Special' },
-  { type: 'mechanical', icon: 'fa-gear', category: 'Special' },
   { type: 'narrative', icon: 'fa-square', category: 'Layout' },
-  { type: 'scroll', icon: 'fa-scroll', category: 'Layout' },
-  { type: 'trapezoid', icon: 'fa-vector-square', category: 'Layout' },
   { type: 'impact', icon: 'fa-circle-dot', category: 'Special' },
 ];
 
@@ -40,6 +33,8 @@ export default function App() {
   const [isExporting, setIsExporting] = useState(false);
   const [activeBubbleIdx, setActiveBubbleIdx] = useState<number>(0);
   const [isDragging, setIsDragging] = useState(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+
   const [generation, setGeneration] = useState<GenerationState>({
     isGenerating: false,
     isAnalyzing: false,
@@ -48,19 +43,18 @@ export default function App() {
     resultUrl: null,
     suggestions: [
       {
-        id: 'demo-1',
+        id: 'initial-story',
         panelNumber: 1,
-        description: "Início da Jornada",
+        description: "Protagonista",
         suggestedDialogue: "ESTOU PRONTO PARA SAIR DA VILA. DEPOIS DE TREINAR POR DEZ ANOS, SINTO-ME FORTE!",
-        position: { x: 50, y: 30 },
+        position: { x: 50, y: 40 },
         tailAngle: 0,
         tailLength: 20,
         fontSize: 24,
-        bubbleScale: 40,
+        bubbleScale: 45,
         bubbleType: 'speech',
         readingOrder: 1,
         zIndex: 10,
-        showTail: false
       }
     ],
   });
@@ -77,56 +71,41 @@ export default function App() {
         reader.onload = (event) => resolve(event.target?.result as string);
         reader.readAsDataURL(files[0]);
       });
-      
-      setSourceImages([{
-        id: Math.random().toString(36).substr(2, 9),
-        url: base64,
-        base64: base64,
-        mimeType: files[0].type,
-        zoom: 1,
-        offsetX: 0,
-        offsetY: 0,
-      }]);
-      
+      setSourceImages([{ id: Date.now().toString(), url: base64, base64: base64, mimeType: files[0].type, zoom: 1, offsetX: 0, offsetY: 0 }]);
       triggerAIAnalysis(base64, files[0].type);
     }
   };
 
   const triggerAIAnalysis = async (base64: string, mime: string) => {
-    setGeneration(prev => ({ ...prev, isAnalyzing: true, statusMessage: 'ANALISANDO COMPOSIÇÃO...' }));
+    setGeneration(prev => ({ ...prev, isAnalyzing: true, statusMessage: 'STUDIO ENGINE: ANALISANDO...' }));
     try {
       const analysis = await analyzeMangaPage(base64, mime);
-      const formatted = analysis.map((s: any) => ({ 
-        ...s, 
-        id: Math.random().toString(36).substr(2, 9),
-        showTail: false, 
-        zIndex: 10 
-      }));
+      const formatted = analysis.map((s: any) => ({ ...s, id: Math.random().toString(36).substr(2, 9), zIndex: 10 }));
       setGeneration(prev => ({ ...prev, suggestions: formatted, isAnalyzing: false }));
       if (formatted.length > 0) setActiveBubbleIdx(0);
     } catch (err) {
-      setGeneration(prev => ({ ...prev, isAnalyzing: false, error: 'Erro na análise.' }));
+      setGeneration(prev => ({ ...prev, isAnalyzing: false, error: 'Erro na análise AI.' }));
     }
   };
 
-  const addManualBubble = () => {
-    const newSug: SceneSuggestion = {
-      id: Math.random().toString(36).substr(2, 9),
-      panelNumber: 1,
-      description: "Novo",
-      suggestedDialogue: "DIGITE AQUI...",
-      position: { x: 50, y: 50 },
-      tailAngle: 0,
-      tailLength: 20,
-      fontSize: 22,
-      bubbleScale: 30,
-      bubbleType: 'speech',
-      readingOrder: generation.suggestions.length + 1,
-      zIndex: 10 + generation.suggestions.length,
-      showTail: false
-    };
-    setGeneration(prev => ({ ...prev, suggestions: [...prev.suggestions, newSug] }));
-    setActiveBubbleIdx(generation.suggestions.length);
+  /**
+   * Fix for error: Cannot find name 'handleDownload'.
+   * Uses toPng from html-to-image to capture the exportRef element and download it.
+   */
+  const handleDownload = async () => {
+    if (!exportRef.current) return;
+    setIsExporting(true);
+    try {
+      const dataUrl = await toPng(exportRef.current, { cacheBust: true });
+      const link = document.createElement('a');
+      link.download = `manga-page-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Error exporting image:', err);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const updateActiveBubble = (field: keyof SceneSuggestion, val: any) => {
@@ -137,27 +116,36 @@ export default function App() {
     }
   };
 
+  const handleCanvasMouseDown = (e: React.MouseEvent, idx: number) => {
+    setActiveBubbleIdx(idx);
+    setIsDragging(true);
+    const bubble = generation.suggestions[idx];
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (rect) {
+      const mouseX = ((e.clientX - rect.left) / rect.width) * 100;
+      const mouseY = ((e.clientY - rect.top) / rect.height) * 100;
+      dragOffset.current = { x: mouseX - bubble.position.x, y: mouseY - bubble.position.y };
+    }
+  };
+
   const handleCanvasMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || !canvasRef.current || activeBubbleIdx === -1) return;
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const mouseX = ((e.clientX - rect.left) / rect.width) * 100;
+    const mouseY = ((e.clientY - rect.top) / rect.height) * 100;
     
-    updateActiveBubble('position', { x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
+    updateActiveBubble('position', { 
+      x: Math.max(0, Math.min(100, mouseX - dragOffset.current.x)), 
+      y: Math.max(0, Math.min(100, mouseY - dragOffset.current.y)) 
+    });
   };
 
-  const handleDownload = async () => {
-    if (!exportRef.current) return;
-    setIsExporting(true);
-    try {
-      const dataUrl = await toPng(exportRef.current, { pixelRatio: 3, backgroundColor: '#fff' });
-      const link = document.createElement('a');
-      link.download = `manga-final-${Date.now()}.png`;
-      link.href = dataUrl;
-      link.click();
-    } finally {
-      setIsExporting(false);
-    }
+  const autoFitScale = () => {
+    const bubble = generation.suggestions[activeBubbleIdx];
+    if (!bubble) return;
+    const textLength = bubble.suggestedDialogue.length;
+    const estimatedScale = Math.max(20, Math.min(80, textLength * 0.8 + 15));
+    updateActiveBubble('bubbleScale', estimatedScale);
   };
 
   const getBubbleStyle = (type: BubbleType) => {
@@ -167,31 +155,11 @@ export default function App() {
       case 'shock': return 'clip-path-shock border-[5px] bg-white';
       case 'burst': return 'clip-path-burst border-[8px] bg-white';
       case 'thought': return 'rounded-[50%] border-dashed border-[4px]';
-      case 'soft-rect': return 'rounded-[20px] border-[4px]';
-      case 'trapezoid': return 'rounded-[4px] border-[4px] skew-x-[-4deg]';
-      case 'starburst': return 'clip-path-star border-[5px] bg-white';
+      case 'soft-rect': return 'rounded-[15px] border-[4px]';
       case 'capsule': return 'rounded-full border-[4px] px-8';
-      case 'bean': return 'rounded-[40%_60%_70%_30%/50%_40%_60%_50%] border-[4px]';
-      case 'narrative': return 'rounded-none border-[3px] bg-white shadow-[4px_4px_0_black]';
-      case 'whisper': return 'rounded-[50%] border-dotted border-[2px] border-gray-400';
-      case 'impact': return 'rounded-lg border-[10px] bg-black text-white border-black';
+      case 'narrative': return 'rounded-none border-[4px] bg-white shadow-[6px_6px_0_black]';
+      case 'impact': return 'rounded-lg border-[12px] bg-black text-white border-black';
       case 'electronic': return 'rounded-none border-[4px] border-black animate-glitch-fast';
-      case 'heart': return 'clip-path-heart border-[4px] bg-white';
-      case 'fear': return 'clip-path-fear border-[3px] bg-white';
-      case 'ice': return 'clip-path-ice border-[4px] bg-white';
-      case 'radio': return 'clip-path-radio border-[4px] bg-white';
-      case 'flower': return 'clip-path-flower border-[4px] bg-white';
-      case 'double': return 'rounded-[50%] border-[6px] outline outline-2 outline-black bg-white';
-      case 'dripping': return 'clip-path-dripping border-[4px] bg-white';
-      case 'mechanical': return 'clip-path-mechanical border-[4px] bg-white';
-      case 'sharp': return 'clip-path-sharp border-[5px] bg-white';
-      case 'cloud-puffy': return 'rounded-[40%_60%] border-[4px] border-black';
-      case 'spiky-thought': return 'clip-path-scream border-[2px] border-dashed bg-white';
-      case 'shojo-spark': return 'clip-path-star border-[1px] bg-white/90 backdrop-blur-sm';
-      case 'double-oval': return 'rounded-[50%] border-[4px] border-black bg-white shadow-[-4px_-2px_0_black]';
-      case 'comic-boom': return 'clip-path-shock border-[10px] border-black bg-white scale-110';
-      case 'scroll': return 'rounded-sm border-y-[6px] border-x-[1px] border-black bg-white';
-      case 'zig-zag': return 'clip-path-radio border-[2px] bg-white';
       default: return 'rounded-[50%] border-[4px]';
     }
   };
@@ -200,42 +168,38 @@ export default function App() {
 
   return (
     <Layout>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative max-w-[1600px] mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative max-w-[1500px] mx-auto">
         
-        {/* SIDEBAR TOOLBOX */}
+        {/* LEFT TOOLBOX - THE STUDIO */}
         <div className="lg:col-span-4 space-y-4 no-print sticky top-24">
-          <div className="manga-panel p-0 bg-black border border-zinc-800 overflow-hidden flex flex-col min-h-[650px] shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+          <div className="manga-panel p-0 bg-[#0a0a0c] border-2 border-zinc-800 overflow-hidden flex flex-col min-h-[700px]">
             
-            {/* TABS STYLING */}
-            <div className="flex border-b border-zinc-800">
+            <div className="flex border-b-2 border-zinc-800">
               {(['text', 'style', 'layout'] as Tab[]).map(t => (
                 <button 
                   key={t}
                   onClick={() => setActiveTab(t)}
-                  className={`flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === t ? 'bg-white text-black' : 'text-zinc-500 hover:text-white bg-zinc-900/20'}`}
+                  className={`flex-1 py-5 text-[10px] font-black uppercase tracking-[0.3em] transition-all ${activeTab === t ? 'bg-white text-black' : 'text-zinc-500 hover:bg-zinc-900'}`}
                 >
                   {t}
                 </button>
               ))}
             </div>
 
-            <div className="p-6 flex-grow overflow-y-auto custom-scrollbar bg-gradient-to-b from-[#0a0a0b] to-[#050505]">
-              
-              <div className="space-y-8">
-                {/* LAYER LIST */}
+            <div className="p-8 flex-grow overflow-y-auto custom-scrollbar">
+              <div className="space-y-10">
+                {/* BUBBLE NAV */}
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center px-1">
-                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">Bubble Layers</label>
-                    <button onClick={addManualBubble} className="bg-white text-black px-3 py-1 text-[8px] font-black uppercase hover:bg-zinc-200 transition-colors rounded-full">
-                      + NEW
-                    </button>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase text-zinc-600 tracking-widest">Ativos em Cena</span>
+                    <button onClick={() => setGeneration(p => ({...p, suggestions: [...p.suggestions, {...p.suggestions[0], id: Date.now().toString(), position: {x: 50, y: 50}}] }))} className="text-[9px] font-black uppercase bg-zinc-800 px-3 py-1 rounded-sm">+ Novo</button>
                   </div>
-                  <div className="grid grid-cols-6 gap-2">
+                  <div className="grid grid-cols-5 gap-2">
                     {generation.suggestions.map((_, i) => (
                       <button 
                         key={i}
                         onClick={() => setActiveBubbleIdx(i)}
-                        className={`aspect-square border flex items-center justify-center font-black text-[11px] transition-all rounded-sm ${activeBubbleIdx === i ? 'bg-white text-black border-white scale-110 z-10' : 'bg-zinc-900 text-zinc-600 border-zinc-800 hover:border-zinc-500'}`}
+                        className={`aspect-square border-2 flex items-center justify-center font-black transition-all ${activeBubbleIdx === i ? 'bg-white text-black border-white scale-110 shadow-lg' : 'bg-black text-zinc-600 border-zinc-800 hover:border-zinc-500'}`}
                       >
                         {i + 1}
                       </button>
@@ -244,72 +208,59 @@ export default function App() {
                 </div>
 
                 {currentBubble && (
-                  <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-300">
-                    
+                  <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                     {activeTab === 'text' && (
-                      <div className="space-y-5">
-                        <div className="bg-[#0f0f11] border border-zinc-700 p-5 rounded-sm focus-within:border-white transition-colors">
+                      <div className="space-y-6">
+                        <div className="bg-black border-2 border-zinc-800 p-6 focus-within:border-white transition-all">
                           <textarea 
                             value={currentBubble.suggestedDialogue} 
                             onChange={e => updateActiveBubble('suggestedDialogue', e.target.value)} 
-                            className="w-full bg-transparent text-[13px] font-bold text-white uppercase resize-none h-40 focus:outline-none placeholder-zinc-800 leading-relaxed"
+                            className="w-full bg-transparent text-lg font-bold text-white uppercase resize-none h-48 focus:outline-none placeholder-zinc-900 leading-tight"
                             placeholder="DIÁLOGO..."
                           />
                         </div>
-                        <div className="space-y-4">
-                          <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500"><span>TAMANHO FONTE</span><span className="text-white">{currentBubble.fontSize}pt</span></div>
-                          <input type="range" min="8" max="120" value={currentBubble.fontSize} onChange={e => updateActiveBubble('fontSize', parseInt(e.target.value))} />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-3">
+                            <label className="text-[9px] font-black uppercase text-zinc-500">Tamanho Fonte</label>
+                            <input type="range" min="10" max="150" value={currentBubble.fontSize} onChange={e => updateActiveBubble('fontSize', parseInt(e.target.value))} />
+                          </div>
+                          <button onClick={autoFitScale} className="bg-zinc-800 hover:bg-white hover:text-black text-[9px] font-black uppercase border border-zinc-700 transition-all">
+                            Auto-Fit Scale
+                          </button>
                         </div>
                       </div>
                     )}
 
                     {activeTab === 'style' && (
-                      <div className="space-y-6">
-                        <div className="grid grid-cols-6 gap-2">
-                          {BUBBLE_STYLES.map(style => (
-                            <button 
-                              key={style.type}
-                              onClick={() => updateActiveBubble('bubbleType', style.type)}
-                              className={`aspect-square border flex items-center justify-center text-sm transition-all rounded-sm ${currentBubble.bubbleType === style.type ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.4)]' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-400'}`}
-                              title={style.type}
-                            >
-                              <i className={`fa-solid ${style.icon}`}></i>
-                            </button>
-                          ))}
-                        </div>
-                        <div className="text-[8px] font-black uppercase text-center text-zinc-600 tracking-[0.3em]">MANGA ASSETS V3.0</div>
+                      <div className="grid grid-cols-4 gap-3">
+                        {BUBBLE_STYLES.map(style => (
+                          <button 
+                            key={style.type}
+                            onClick={() => updateActiveBubble('bubbleType', style.type)}
+                            className={`aspect-square border-2 flex flex-col items-center justify-center gap-2 transition-all ${currentBubble.bubbleType === style.type ? 'bg-white text-black border-white' : 'bg-black border-zinc-800 text-zinc-600 hover:border-zinc-500'}`}
+                          >
+                            <i className={`fa-solid ${style.icon} text-lg`}></i>
+                            <span className="text-[7px] font-black uppercase">{style.type}</span>
+                          </button>
+                        ))}
                       </div>
                     )}
 
                     {activeTab === 'layout' && (
-                      <div className="space-y-6">
+                      <div className="space-y-8">
                         <div className="space-y-4">
-                          <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500"><span>VOLUME BALÃO</span><span className="text-white">{currentBubble.bubbleScale}%</span></div>
-                          <input type="range" min="5" max="98" value={currentBubble.bubbleScale} onChange={e => updateActiveBubble('bubbleScale', parseInt(e.target.value))} />
+                          <div className="flex justify-between text-[10px] font-black uppercase"><span className="text-zinc-500">Escala Global</span><span className="text-white">{currentBubble.bubbleScale}%</span></div>
+                          <input type="range" min="10" max="95" value={currentBubble.bubbleScale} onChange={e => updateActiveBubble('bubbleScale', parseInt(e.target.value))} />
                         </div>
                         <div className="space-y-4">
-                          <div className="flex justify-between text-[9px] font-black uppercase text-zinc-500"><span>ROTAÇÃO</span><span className="text-white">{currentBubble.tailAngle}°</span></div>
+                          <div className="flex justify-between text-[10px] font-black uppercase"><span className="text-zinc-500">Rotação</span><span className="text-white">{currentBubble.tailAngle}°</span></div>
                           <input type="range" min="-180" max="180" value={currentBubble.tailAngle} onChange={e => updateActiveBubble('tailAngle', parseInt(e.target.value))} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                           <button 
-                            onClick={() => updateActiveBubble('zIndex', (currentBubble.zIndex || 10) + 1)}
-                            className="bg-zinc-900 border border-zinc-700 py-3 text-[8px] font-black uppercase text-zinc-400 hover:bg-white hover:text-black transition-all rounded-sm"
-                           >
-                             Trazer p/ Frente
-                           </button>
-                           <button 
-                            onClick={() => updateActiveBubble('zIndex', Math.max(1, (currentBubble.zIndex || 10) - 1))}
-                            className="bg-zinc-900 border border-zinc-700 py-3 text-[8px] font-black uppercase text-zinc-400 hover:bg-white hover:text-black transition-all rounded-sm"
-                           >
-                             Enviar p/ Trás
-                           </button>
                         </div>
                         <button 
                           onClick={() => setGeneration(p => ({...p, suggestions: p.suggestions.filter((_, idx) => idx !== activeBubbleIdx)}))} 
-                          className="w-full py-3 bg-red-950/10 text-red-500 border border-red-900/20 text-[8px] font-black uppercase hover:bg-red-600 hover:text-white transition-all rounded-sm"
+                          className="w-full py-4 bg-red-950/20 text-red-500 border-2 border-red-900/30 text-[9px] font-black uppercase hover:bg-red-600 hover:text-white transition-all"
                         >
-                          Eliminar Balão Selecionado
+                          Eliminar Balão
                         </button>
                       </div>
                     )}
@@ -318,38 +269,34 @@ export default function App() {
               </div>
             </div>
             
-            <div className="p-6 bg-black border-t border-zinc-800">
+            <div className="p-8 bg-black border-t-2 border-zinc-800 flex flex-col gap-3">
+               <button onClick={() => fileInputRef.current?.click()} className="w-full bg-zinc-900 text-white py-5 text-[10px] font-black uppercase tracking-[0.3em] border-2 border-zinc-700 hover:bg-white hover:text-black transition-all">
+                 Importar Arte Base
+               </button>
                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-               <div className="flex gap-2">
-                 <button onClick={() => fileInputRef.current?.click()} className="flex-1 bg-zinc-900 text-white py-4 text-[9px] font-black uppercase tracking-[0.2em] border border-zinc-700 hover:bg-zinc-800 transition-all">
-                   Importar Arte
-                 </button>
-                 <button onClick={handleDownload} disabled={isExporting} className="flex-1 bg-white text-black py-4 text-[9px] font-black uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all">
-                   {isExporting ? 'GERANDO...' : 'EXPORTAR'}
-                 </button>
-               </div>
+               <button onClick={handleDownload} disabled={isExporting} className="w-full bg-white text-black py-5 text-[10px] font-black uppercase tracking-[0.3em] shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-105 active:scale-95 transition-all">
+                 {isExporting ? 'GERANDO PNG...' : 'FINALIZAR PROJETO'}
+               </button>
             </div>
           </div>
         </div>
 
-        {/* WORKSPACE CANVAS */}
+        {/* MAIN CANVAS - THE WORKSPACE */}
         <div className="lg:col-span-8 group">
-          <div className="manga-panel bg-[#09090b] p-6 lg:p-16 relative halftone-bg min-h-[850px] border border-zinc-800 flex justify-center items-start overflow-hidden rounded-sm">
+          <div className="manga-panel bg-black p-4 lg:p-12 relative halftone-bg min-h-[850px] border-2 border-zinc-800 flex justify-center items-start overflow-hidden rounded-sm">
             
-            {/* LOADING OVERLAY */}
             {generation.isAnalyzing && (
-              <div className="absolute inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-12 text-center text-white backdrop-blur-md">
-                <div className="w-64 h-[2px] bg-zinc-900 mb-10 overflow-hidden border border-white/5">
-                   <div className="h-full bg-white animate-[loading_1.2s_infinite_linear]" style={{ width: '40%' }}></div>
+              <div className="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center p-12 text-center">
+                <div className="w-64 h-[2px] bg-zinc-900 mb-8 overflow-hidden">
+                   <div className="h-full bg-white animate-[loading_1s_infinite_linear]" style={{ width: '40%' }}></div>
                 </div>
-                <p className="manga-font text-3xl italic tracking-[0.2em] uppercase text-zinc-100 animate-pulse">{generation.statusMessage}</p>
-                <p className="text-[9px] font-black uppercase text-zinc-600 mt-4 tracking-widest">AI STUDIO ENGINE</p>
+                <p className="manga-font text-4xl italic tracking-[0.2em] uppercase text-white animate-pulse">{generation.statusMessage}</p>
               </div>
             )}
 
             <div 
               ref={exportRef} 
-              className={`relative aspect-[1/1.41] bg-white w-full border-[1px] border-black overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.9)] ${isDragging ? 'cursor-grabbing' : 'cursor-crosshair'}`}
+              className={`relative aspect-[1/1.41] bg-white w-full border-[2px] border-black overflow-hidden shadow-[0_0_100px_rgba(255,255,255,0.05)] ${isDragging ? 'cursor-grabbing' : 'cursor-crosshair'}`}
               onMouseMove={handleCanvasMouseMove}
               onMouseUp={() => setIsDragging(false)}
               onMouseLeave={() => setIsDragging(false)}
@@ -359,12 +306,14 @@ export default function App() {
                   <img 
                     src={sourceImages[0].url} 
                     className="w-full h-full grayscale object-cover"
-                    style={{ filter: 'contrast(1.5) brightness(1.05) saturate(0)' }}
+                    style={{ filter: 'contrast(1.4) brightness(1.1) saturate(0)' }}
                   />
                 ) : (
-                  <div className="absolute inset-0 bg-[#f8f8f8] flex flex-col items-center justify-center p-10 text-center opacity-40">
-                     <i className="fa-solid fa-image text-8xl mb-6 text-zinc-300"></i>
-                     <p className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Aguardando Imagem Original</p>
+                  <div className="absolute inset-0 bg-white flex flex-col items-center justify-center p-20 text-center">
+                     <div className="border-[8px] border-black p-10 opacity-10">
+                        <i className="fa-solid fa-pen-nib text-[10rem] text-black"></i>
+                     </div>
+                     <p className="text-[12px] font-black uppercase text-black mt-8 tracking-[0.5em] opacity-30 italic">Studio Canvas Ready</p>
                   </div>
                 )}
                 
@@ -372,37 +321,32 @@ export default function App() {
                   {generation.suggestions.map((s, idx) => (
                     <div 
                       key={s.id} 
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        setActiveBubbleIdx(idx);
-                        setIsDragging(true);
-                      }}
-                      className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-auto transition-transform ${activeBubbleIdx === idx ? 'z-40' : 'opacity-90'}`} 
+                      onMouseDown={(e) => handleCanvasMouseDown(e, idx)}
+                      className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-auto transition-opacity ${activeBubbleIdx === idx ? 'z-40' : 'opacity-90'}`} 
                       style={{ 
                         left: `${s.position.x}%`, 
                         top: `${s.position.y}%`, 
                         width: `${s.bubbleScale}%`,
                         zIndex: s.zIndex || 10,
-                        transform: `translate(-50%, -50%) rotate(${s.tailAngle}deg) ${isDragging && activeBubbleIdx === idx ? 'scale(1.05)' : 'scale(1)'}` 
+                        transform: `translate(-50%, -50%) rotate(${s.tailAngle}deg) ${isDragging && activeBubbleIdx === idx ? 'scale(1.08)' : 'scale(1)'}` 
                       }}
                     >
-                      <div className="relative w-full group/bubble">
+                      <div className="relative w-full">
                         <div 
-                          className={`bg-white p-5 flex items-center justify-center text-center border-black shadow-2xl ${getBubbleStyle(s.bubbleType)} ${activeBubbleIdx === idx ? 'ring-4 ring-black ring-offset-4 ring-offset-white' : ''}`}
+                          className={`bg-white p-6 flex items-center justify-center text-center border-black shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all ${getBubbleStyle(s.bubbleType)} ${activeBubbleIdx === idx ? 'ring-[6px] ring-black ring-offset-[6px] ring-offset-white' : ''}`}
                           style={{ 
-                            minHeight: '40px', 
+                            minHeight: '60px', 
                             width: '100%', 
                             color: s.bubbleType === 'impact' ? '#fff' : '#000',
                           }}
                         >
-                           <p className="font-black leading-[0.85] uppercase tracking-tighter" style={{ fontSize: `${s.fontSize}px` }}>
+                           <p className="font-black leading-[0.8] uppercase tracking-tighter" style={{ fontSize: `${s.fontSize}px` }}>
                              {s.suggestedDialogue}
                            </p>
                         </div>
                         
-                        {/* SELECTION GUIDES */}
                         {activeBubbleIdx === idx && !isExporting && (
-                          <div className="absolute -inset-6 border border-black/10 border-dashed rounded-full animate-[spin_20s_linear_infinite] pointer-events-none"></div>
+                          <div className="absolute -inset-10 border-2 border-black/5 border-dashed rounded-full animate-[spin_30s_linear_infinite] pointer-events-none"></div>
                         )}
                       </div>
                     </div>
@@ -425,12 +369,7 @@ export default function App() {
         .clip-path-star { clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
         .clip-path-heart { clip-path: polygon(50% 15%, 75% 0%, 100% 25%, 50% 100%, 0% 25%, 25% 0%); }
         .clip-path-fear { clip-path: polygon(0% 10%, 10% 0%, 20% 15%, 30% 5%, 40% 15%, 50% 0%, 60% 15%, 70% 5%, 80% 15%, 90% 0%, 100% 10%, 95% 30%, 100% 50%, 95% 70%, 100% 90%, 90% 100%, 80% 85%, 70% 95%, 60% 85%, 50% 100%, 40% 85%, 30% 95%, 20% 85%, 10% 100%, 0% 90%, 5% 70%, 0% 50%, 5% 30%); }
-        .clip-path-ice { clip-path: polygon(50% 0%, 70% 20%, 100% 10%, 85% 50%, 100% 90%, 70% 80%, 50% 100%, 30% 80%, 0% 90%, 15% 50%, 0% 10%, 30% 20%); }
-        .clip-path-radio { clip-path: polygon(0% 0%, 40% 0%, 50% 15%, 60% 0%, 100% 0%, 100% 40%, 85% 50%, 100% 60%, 100% 100%, 60% 100%, 50% 85%, 40% 100%, 0% 100%, 0% 60%, 15% 50%, 0% 40%); }
-        .clip-path-flower { clip-path: polygon(50% 0%, 65% 10%, 85% 0%, 95% 20%, 100% 40%, 90% 55%, 100% 70%, 95% 90%, 75% 100%, 50% 90%, 25% 100%, 5% 90%, 0% 70%, 10% 55%, 0% 40%, 5% 20%, 25% 0%, 35% 10%); }
         .clip-path-dripping { clip-path: polygon(0% 0%, 100% 0%, 100% 70%, 90% 100%, 80% 70%, 70% 100%, 60% 70%, 50% 100%, 40% 70%, 30% 100%, 20% 70%, 10% 100%, 0% 70%); }
-        .clip-path-mechanical { clip-path: polygon(0% 15%, 15% 15%, 15% 0%, 85% 0%, 85% 15%, 100% 15%, 100% 85%, 85% 85%, 85% 100%, 15% 100%, 15% 85%, 0% 85%); }
-        .clip-path-sharp { clip-path: polygon(0% 50%, 10% 10%, 50% 0%, 90% 10%, 100% 50%, 90% 90%, 50% 100%, 10% 90%); }
       `}</style>
     </Layout>
   );
