@@ -5,62 +5,71 @@
 
 body {
   font-family: 'Noto Sans JP', sans-serif;
-  @apply bg-[#f0f0f0] text-black;
+  @apply bg-[#f8f8f8] text-black;
 }
 
 .manga-font {
   font-family: 'Bangers', cursive;
 }
 
+/* Painel estilo Mangá Studio */
 .manga-panel {
-  box-shadow: 12px 12px 0px #000;
-  border: 4px solid #000;
-  @apply bg-white transition-shadow;
+  border: 2px solid #000;
+  @apply bg-white shadow-[4px_4px_0px_#000] transition-all;
 }
 
-.manga-panel:hover {
-  box-shadow: 16px 16px 0px #000;
+/* Sliders Customizados (Estilo da Imagem) */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  background: transparent;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 2px;
+  background: #e5e7eb;
+  border-radius: 2px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #000;
+  cursor: pointer;
+  margin-top: -7px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #000;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
+  width: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  @apply bg-gray-200;
+  @apply bg-transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-black rounded-full;
+  @apply bg-black/20 rounded-full;
 }
 
 .halftone-bg {
-  background-image: radial-gradient(#aaa 1px, transparent 0);
-  background-size: 8px 8px;
+  background-image: radial-gradient(#ddd 0.5px, transparent 0);
+  background-size: 4px 4px;
 }
 
-/* Garante que o texto dos balões seja nítido */
-p {
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
+@keyframes glitch {
+  0% { transform: translate(0) skew(0); }
+  20% { transform: translate(-2px, 2px) skew(2deg); }
+  40% { transform: translate(-2px, -2px) skew(-2deg); }
+  60% { transform: translate(2px, 2px) skew(2deg); }
+  80% { transform: translate(2px, -2px) skew(-2deg); }
+  100% { transform: translate(0) skew(0); }
 }
 
-@media print {
-  body { background: white !important; padding: 0 !important; }
-  header, footer, .lg\:col-span-4, button, .no-print, .absolute.top-2.left-2 {
-    display: none !important;
-  }
-  .lg\:col-span-8 {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  .manga-panel {
-    border: none !important;
-    box-shadow: none !important;
-    background: white !important;
-  }
-  .halftone-bg {
-    background-image: none !important;
-  }
+.animate-glitch-fast {
+  animation: glitch 0.2s infinite linear alternate-reverse;
 }
