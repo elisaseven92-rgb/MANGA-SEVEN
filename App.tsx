@@ -41,7 +41,7 @@ export default function App() {
           url: base64,
           base64: base64,
           mimeType: file.type,
-          zoom: 1.2, // Zoom inicial leve para preencher melhor
+          zoom: 1.1, // Começa com um leve zoom para garantir preenchimento
           offsetX: 0,
           offsetY: 0,
         });
@@ -105,14 +105,14 @@ export default function App() {
     setActivePanelIdx(null); 
     
     try {
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 300));
       const dataUrl = await toPng(exportRef.current, { 
         cacheBust: true, 
         pixelRatio: 2,
         backgroundColor: '#ffffff'
       });
       const link = document.createElement('a');
-      link.download = `manga-fixed-${Date.now()}.png`;
+      link.download = `seven-manga-fixed-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
     } finally {
@@ -157,15 +157,22 @@ export default function App() {
     }
   };
 
+  const getFilter = (type: BubbleType) => {
+    if (['scream', 'wavy', 'sharp'].includes(type)) {
+      return "relative [filter:drop-shadow(3px_0_0_black)_drop-shadow(-3px_0_0_black)_drop-shadow(0_3px_0_black)_drop-shadow(0_-3px_0_black)]";
+    }
+    return "relative";
+  };
+
   const renderMangaGrid = () => {
     const count = sourceImages.length;
     if (count === 0) return null;
 
     return (
       <div 
-        className="grid gap-3 p-4 bg-black w-full h-full flex-grow overflow-hidden border-4 border-black"
+        className="grid gap-4 p-4 bg-black w-full h-full flex-grow border-4 border-black"
         style={{
-          gridTemplateRows: count === 3 ? '1.5fr 1fr' : count === 2 ? '1fr 1fr' : '1fr',
+          gridTemplateRows: count === 3 ? '1.2fr 1fr' : count === 2 ? '1fr 1fr' : '1fr',
           gridTemplateColumns: count === 3 ? '1fr 1fr' : '1fr',
         }}
       >
@@ -175,16 +182,16 @@ export default function App() {
           return (
             <div 
               key={img.id} 
-              className={`relative bg-white border-2 border-black transition-all ${
-                isActive ? 'z-50 ring-4 ring-white shadow-2xl scale-[1.02]' : 'z-10 overflow-hidden'
+              className={`relative bg-white border-2 border-black transition-all group ${
+                isActive ? 'z-50 shadow-2xl' : 'z-10 overflow-hidden'
               }`}
               style={{
                 gridColumn: count === 3 && i === 0 ? 'span 2' : 'auto',
               }}
             >
-              {/* Máscara de Transparência (Apenas no modo ativo) */}
+              {/* Moldura de Edição (Máscara Ativa) */}
               {isActive && (
-                <div className="absolute inset-0 z-40 pointer-events-none border-[1000px] border-black/40 box-content -ml-[1000px] -mt-[1000px]"></div>
+                <div className="absolute inset-0 z-40 pointer-events-none ring-[2000px] ring-black/60"></div>
               )}
               
               <img 
@@ -192,12 +199,21 @@ export default function App() {
                 className={`w-full h-full grayscale transition-transform duration-75 origin-center pointer-events-none ${isActive ? 'object-contain' : 'object-cover'}`}
                 style={{
                   transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`,
-                  filter: 'contrast(1.1) brightness(1.05)'
+                  filter: 'contrast(1.15) brightness(1.05)'
                 }}
               />
 
+              {/* Indicador de quadro */}
+              <div className="absolute top-2 left-2 bg-black text-white text-[8px] font-black px-1.5 py-0.5 z-50 italic select-none">
+                {i + 1}
+              </div>
+
+              {/* Overlay de auxílio visual */}
               {isActive && (
-                <div className="absolute inset-0 z-50 border-4 border-dashed border-white/50 pointer-events-none"></div>
+                <div className="absolute inset-0 z-50 border-2 border-dashed border-white/40 pointer-events-none flex items-center justify-center">
+                   <div className="w-1/2 h-full border-x border-white/20"></div>
+                   <div className="h-1/2 w-full border-y border-white/20 absolute"></div>
+                </div>
               )}
             </div>
           );
@@ -206,54 +222,65 @@ export default function App() {
     );
   };
 
+  const removeImage = (id: string) => {
+    setSourceImages(prev => prev.filter(img => img.id !== id));
+    if (activePanelIdx !== null) setActivePanelIdx(null);
+  };
+
   return (
     <Layout>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* SIDEBAR */}
+        {/* SIDEBAR DE CONTROLES */}
         <div className="lg:col-span-4 no-print space-y-6">
           <div className="manga-panel p-5 bg-white space-y-6">
             <div className="flex justify-between items-center border-b-4 border-black pb-2">
               <div className="flex flex-col">
-                <h2 className="text-xl font-black uppercase italic tracking-tighter">Manga Pro</h2>
-                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Ajuste de Mascaramento Ativo</span>
+                <h2 className="text-xl font-black uppercase italic tracking-tighter">Manga Composer</h2>
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Controle de Máscara Profissional</span>
               </div>
-              <button onClick={() => fileInputRef.current?.click()} disabled={sourceImages.length >= 3} className="bg-black text-white px-3 py-1 text-[10px] font-black uppercase">
-                + Imagem
+              <button onClick={() => fileInputRef.current?.click()} disabled={sourceImages.length >= 3} className={`px-3 py-1 text-[10px] font-black uppercase transition-all ${sourceImages.length >= 3 ? 'bg-gray-100 text-gray-400' : 'bg-black text-white hover:bg-gray-800'}`}>
+                + Upload
               </button>
               <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" multiple />
             </div>
 
             <div className="space-y-4">
               {sourceImages.map((img, i) => (
-                <div key={img.id} className={`border-2 p-3 transition-all ${activePanelIdx === i ? 'border-black bg-white shadow-[4px_4px_0_black]' : 'border-gray-100 bg-gray-50'}`}>
+                <div key={img.id} className={`border-2 p-3 transition-all ${activePanelIdx === i ? 'border-black bg-white shadow-[6px_6px_0_black]' : 'border-gray-100 bg-gray-50 opacity-80'}`}>
                   <div className="flex gap-3">
-                    <img src={img.url} className="w-12 h-12 object-cover border-2 border-black flex-shrink-0 grayscale" />
+                    <div className="w-14 h-14 border-2 border-black flex-shrink-0 bg-white overflow-hidden">
+                       <img src={img.url} className="w-full h-full object-cover grayscale" />
+                    </div>
                     <div className="flex-grow">
-                      <div className="flex justify-between">
-                        <span className="text-[10px] font-black italic uppercase">Cena {i+1}</span>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-black uppercase italic">Quadro {i+1}</span>
                         <div className="flex gap-2">
-                          <button onClick={() => setActivePanelIdx(activePanelIdx === i ? null : i)} className="text-[9px] font-black uppercase bg-black text-white px-2">
-                            {activePanelIdx === i ? 'Salvar' : 'Enquadrar'}
+                          <button onClick={() => setActivePanelIdx(activePanelIdx === i ? null : i)} className={`text-[9px] font-black px-2 py-0.5 border-2 border-black uppercase ${activePanelIdx === i ? 'bg-black text-white' : 'bg-white'}`}>
+                            {activePanelIdx === i ? 'Salvo' : 'Ajustar'}
                           </button>
-                          <button onClick={() => setSourceImages(prev => prev.filter(x => x.id !== img.id))} className="text-red-600">
-                             <i className="fa-solid fa-trash text-xs"></i>
+                          <button onClick={() => removeImage(img.id)} className="text-red-600 hover:scale-110">
+                            <i className="fa-solid fa-trash-can text-xs"></i>
                           </button>
                         </div>
                       </div>
+                      
                       {activePanelIdx === i && (
-                        <div className="mt-3 space-y-3">
+                        <div className="mt-4 pt-4 border-t border-gray-200 space-y-4 animate-in fade-in duration-300">
                            <div className="space-y-1">
-                              <label className="text-[8px] font-black uppercase">Zoom</label>
+                              <div className="flex justify-between text-[8px] font-black uppercase italic">
+                                <span>Zoom da Máscara</span>
+                                <span>{img.zoom.toFixed(1)}x</span>
+                              </div>
                               <input type="range" min="0.1" max="5" step="0.1" value={img.zoom} onChange={e => updateImageTransform(img.id, 'zoom', parseFloat(e.target.value))} className="w-full h-1 accent-black" />
                            </div>
-                           <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="text-[8px] font-black uppercase">Posição X</label>
-                                <input type="range" min="-200" max="200" value={img.offsetX} onChange={e => updateImageTransform(img.id, 'offsetX', parseInt(e.target.value))} className="w-full h-1 accent-black" />
+                           <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <span className="text-[8px] font-black uppercase text-center block">Mover X</span>
+                                <input type="range" min="-150" max="150" value={img.offsetX} onChange={e => updateImageTransform(img.id, 'offsetX', parseInt(e.target.value))} className="w-full h-1 accent-black" />
                               </div>
-                              <div>
-                                <label className="text-[8px] font-black uppercase">Posição Y</label>
-                                <input type="range" min="-200" max="200" value={img.offsetY} onChange={e => updateImageTransform(img.id, 'offsetY', parseInt(e.target.value))} className="w-full h-1 accent-black" />
+                              <div className="space-y-1">
+                                <span className="text-[8px] font-black uppercase text-center block">Mover Y</span>
+                                <input type="range" min="-150" max="150" value={img.offsetY} onChange={e => updateImageTransform(img.id, 'offsetY', parseInt(e.target.value))} className="w-full h-1 accent-black" />
                               </div>
                            </div>
                         </div>
@@ -267,27 +294,24 @@ export default function App() {
             {sourceImages.length > 0 && (
               <div className="pt-4 border-t-4 border-black space-y-4">
                 <div className="flex justify-between items-center">
-                   <h3 className="text-xs font-black uppercase">Diálogos</h3>
-                   <button onClick={addManualBubble} className="bg-black text-white px-2 py-0.5 text-[8px] font-black uppercase italic">+ Adicionar</button>
+                  <h3 className="text-xs font-black uppercase italic">Adicionar Falas</h3>
+                  <button onClick={addManualBubble} className="bg-black text-white px-2 py-0.5 text-[8px] font-black uppercase tracking-tighter hover:bg-yellow-500 hover:text-black">+ Novo Balão</button>
                 </div>
                 <div className="space-y-3 max-h-[30vh] overflow-y-auto pr-2 custom-scrollbar">
                   {generation.suggestions.map((s, i) => (
-                    <div key={i} className="border-2 border-black p-3 bg-white shadow-[3px_3px_0_black]">
-                      <textarea 
-                        value={s.suggestedDialogue} 
-                        onChange={e => updateSuggestion(i, 'suggestedDialogue', e.target.value)} 
-                        className="w-full text-[10px] font-bold border-2 border-black p-2 h-12 resize-none outline-none mb-2" 
-                      />
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[7px] font-black uppercase">Posição X</span>
-                          <input type="range" min="0" max="100" value={s.position.x} onChange={e => updatePosition(i, parseInt(e.target.value), s.position.y)} className="w-full h-1 accent-black" />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[7px] font-black uppercase">Posição Y</span>
-                          <input type="range" min="0" max="100" value={s.position.y} onChange={e => updatePosition(i, s.position.x, parseInt(e.target.value))} className="w-full h-1 accent-black" />
-                        </div>
-                      </div>
+                    <div key={i} className="border-2 border-black p-3 bg-white shadow-[3px_3px_0_black] transition-all hover:translate-x-0.5">
+                       <textarea value={s.suggestedDialogue} onChange={e => updateSuggestion(i, 'suggestedDialogue', e.target.value)} className="w-full text-[10px] font-bold border-2 border-black p-2 h-14 resize-none outline-none focus:bg-yellow-50" />
+                       <div className="grid grid-cols-2 gap-3 mt-2">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[7px] font-black uppercase opacity-50">Local X</span>
+                            <input type="range" min="0" max="100" value={s.position.x} onChange={e => updatePosition(i, parseInt(e.target.value), s.position.y)} className="w-full h-1 accent-black" />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[7px] font-black uppercase opacity-50">Local Y</span>
+                            <input type="range" min="0" max="100" value={s.position.y} onChange={e => updatePosition(i, s.position.x, parseInt(e.target.value))} className="w-full h-1 accent-black" />
+                          </div>
+                       </div>
+                       <button onClick={() => setGeneration(p => ({...p, suggestions: p.suggestions.filter((_, idx) => idx !== i)}))} className="text-[7px] font-black uppercase text-red-600 mt-2 hover:underline">Remover Diálogo</button>
                     </div>
                   ))}
                 </div>
@@ -296,28 +320,37 @@ export default function App() {
           </div>
         </div>
 
-        {/* ÁREA DE DESENHO */}
+        {/* ÁREA DA FOLHA DE MANGÁ */}
         <div className="lg:col-span-8 flex flex-col items-center">
           <div className="manga-panel bg-white p-6 min-h-[900px] w-full max-w-[700px] relative halftone-bg border-4 border-black flex flex-col">
             <div ref={exportRef} className="relative flex-grow bg-white w-full h-full flex flex-col border-2 border-black overflow-hidden shadow-inner">
               {sourceImages.length === 0 ? (
-                <div className="flex-grow flex flex-col items-center justify-center opacity-10 select-none">
-                  <i className="fa-solid fa-layer-group text-8xl mb-4"></i>
+                <div className="flex-grow flex flex-col items-center justify-center opacity-10 select-none m-12 border-4 border-dashed border-black/20">
+                  <i className="fa-solid fa-wand-magic-sparkles text-8xl mb-6"></i>
                   <p className="text-3xl font-black italic uppercase">Seven Mangá</p>
+                  <p className="text-[10px] font-bold tracking-[0.8em] mt-2">MONOCHROME ENGINE</p>
                 </div>
               ) : (
-                <div className="relative w-full h-full flex flex-col">
+                <div className="relative w-full h-full flex-grow flex flex-col">
                   {renderMangaGrid()}
                   
-                  {/* BALÕES */}
+                  {/* CAMADA DE BALÕES DE FALA */}
                   <div className="absolute inset-0 pointer-events-none z-[100]">
-                    {generation.suggestions.map((s, idx) => (
-                      <div key={idx} className="absolute transform -translate-x-1/2 -translate-y-1/2" style={{ left: `${s.position.x}%`, top: `${s.position.y}%`, width: `${s.bubbleScale || 35}%` }}>
-                        <div className="bg-white border-[3px] border-black rounded-[50%] px-6 py-8 flex items-center justify-center shadow-[4px_4px_0_black]">
-                           <p className="text-black font-black text-center text-xs leading-tight uppercase">{s.suggestedDialogue}</p>
+                    {generation.suggestions.map((s, idx) => {
+                      const scale = s.bubbleScale || 35;
+                      return (
+                        <div key={idx} className="absolute transform -translate-x-1/2 -translate-y-1/2" style={{ left: `${s.position.x}%`, top: `${s.position.y}%`, width: `${scale}%`, zIndex: 100 + idx }}>
+                          <div className="relative [filter:drop-shadow(3px_3px_0_black)]">
+                            <div className="bg-white border-[4px] border-black rounded-[50%] px-6 py-10 flex items-center justify-center min-h-[80px]">
+                              <p className="text-black font-black text-center text-xs leading-[1.1] uppercase tracking-tighter" style={{ fontSize: `${s.fontSize || 14}px` }}>{s.suggestedDialogue}</p>
+                            </div>
+                            {/* Rabicho simples */}
+                            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[20px] border-t-black"></div>
+                            <div className="absolute -bottom-[12px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-white"></div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -326,10 +359,10 @@ export default function App() {
 
           {sourceImages.length > 0 && (
             <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-[700px]">
-              <button onClick={() => setSourceImages([])} className="py-4 bg-white border-4 border-black font-black uppercase italic shadow-[6px_6px_0_black] hover:bg-black hover:text-white transition-all">Limpar</button>
-              <button onClick={handleDownload} disabled={isExporting} className="py-4 bg-black text-white border-4 border-black font-black uppercase italic shadow-[10px_10px_0_#ccc] flex items-center justify-center gap-2">
-                {isExporting ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-download"></i>}
-                Exportar Página
+              <button onClick={() => { setSourceImages([]); setGeneration(p => ({...p, suggestions: []})); setActivePanelIdx(null); }} className="py-4 bg-white border-4 border-black font-black uppercase italic tracking-widest shadow-[8px_8px_0_black] hover:bg-black hover:text-white transition-all">Limpar Tudo</button>
+              <button onClick={handleDownload} disabled={isExporting} className="py-4 bg-black text-white border-4 border-black font-black uppercase italic tracking-widest shadow-[12px_12px_0_#ccc] flex items-center justify-center gap-3 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+                {isExporting ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-cloud-arrow-down"></i>}
+                Exportar Arte
               </button>
             </div>
           )}
