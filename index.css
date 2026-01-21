@@ -5,20 +5,20 @@
 
 body {
   font-family: 'Noto Sans JP', sans-serif;
-  @apply bg-[#f8f8f8] text-black;
+  @apply bg-[#09090b] text-[#e4e4e7];
 }
 
 .manga-font {
   font-family: 'Bangers', cursive;
 }
 
-/* Painel estilo Mangá Studio */
+/* Painel estilo Mangá Studio Dark */
 .manga-panel {
-  border: 2px solid #000;
-  @apply bg-white shadow-[4px_4px_0px_#000] transition-all;
+  border: 1px solid #27272a;
+  @apply bg-[#18181b] shadow-[0px_4px_20px_rgba(0,0,0,0.5)] transition-all;
 }
 
-/* Sliders Customizados (Estilo da Imagem) */
+/* Sliders Customizados Dark Mode */
 input[type="range"] {
   -webkit-appearance: none;
   width: 100%;
@@ -28,20 +28,20 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-runnable-track {
   width: 100%;
   height: 2px;
-  background: #e5e7eb;
+  background: #3f3f46;
   border-radius: 2px;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  height: 16px;
-  width: 16px;
+  height: 14px;
+  width: 14px;
   border-radius: 50%;
-  background: #000;
+  background: #ffffff;
   cursor: pointer;
-  margin-top: -7px;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 1px #000;
+  margin-top: -6px;
+  border: 2px solid #000;
+  box-shadow: 0 0 10px rgba(255,255,255,0.1);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -53,20 +53,20 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-black/20 rounded-full;
+  @apply bg-white/10 rounded-full hover:bg-white/20;
 }
 
 .halftone-bg {
-  background-image: radial-gradient(#ddd 0.5px, transparent 0);
-  background-size: 4px 4px;
+  background-image: radial-gradient(#1a1a1a 1px, transparent 0);
+  background-size: 8px 8px;
 }
 
 @keyframes glitch {
   0% { transform: translate(0) skew(0); }
-  20% { transform: translate(-2px, 2px) skew(2deg); }
-  40% { transform: translate(-2px, -2px) skew(-2deg); }
-  60% { transform: translate(2px, 2px) skew(2deg); }
-  80% { transform: translate(2px, -2px) skew(-2deg); }
+  20% { transform: translate(-1px, 1px) skew(1deg); }
+  40% { transform: translate(-1px, -1px) skew(-1deg); }
+  60% { transform: translate(1px, 1px) skew(1deg); }
+  80% { transform: translate(1px, -1px) skew(-1deg); }
   100% { transform: translate(0) skew(0); }
 }
 
