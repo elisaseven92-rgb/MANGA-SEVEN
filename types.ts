@@ -16,9 +16,10 @@ export type BubbleType =
   | 'narrative' 
   | 'whisper' 
   | 'wavy' 
-  | 'modern' 
+  | 'impact' 
   | 'organic' 
-  | 'sharp';
+  | 'sharp'
+  | 'modern';
 
 export interface SceneSuggestion {
   panelNumber: number;
@@ -28,11 +29,11 @@ export interface SceneSuggestion {
     x: number; // 0-100
     y: number; // 0-100
   };
-  tailAngle: number; // 0-360
-  tailLength: number; // Comprimento do rabicho
-  fontSize: number; // Tamanho da fonte em px
-  bubbleScale: number; // Escala/Largura do balão em %
-  bubbleType: BubbleType; // Estilo do balão
+  tailAngle: number; 
+  tailLength: number; 
+  fontSize: number; 
+  bubbleScale: number; 
+  bubbleType: BubbleType; 
   readingOrder: number;
 }
 
