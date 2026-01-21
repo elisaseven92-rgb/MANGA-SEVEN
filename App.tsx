@@ -165,7 +165,7 @@ export default function App() {
     const count = sourceImages.length;
     if (count === 0) return null;
 
-    // Usamos overflow: visible quando editando para que o usuário veja a imagem inteira se ela sair do quadro
+    // overflow-visible é CRUCIAL aqui para que a imagem não seja cortada quando movida para fora do quadro durante ajuste
     let gridClass = `grid gap-4 bg-black p-4 border-4 border-black h-full w-full transition-all ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`;
     
     if (count === 1) gridClass += " grid-cols-1";
@@ -177,21 +177,21 @@ export default function App() {
       <div className={gridClass} style={{ minHeight: '100%' }}>
         {sourceImages.map((img, i) => {
           const isActive = activePanelIdx === i;
-          // 'object-contain' garante que toda a imagem seja visível e mantenha a proporção
-          let spanClass = `relative bg-white transition-all ${isActive ? 'z-50 overflow-visible ring-4 ring-black shadow-2xl scale-[1.02]' : 'overflow-hidden'}`;
+          // 'object-contain' mantém a imagem inteira visível. overflow-visible no isActive evita o corte.
+          let spanClass = `relative bg-white transition-all ${isActive ? 'z-50 overflow-visible ring-4 ring-black shadow-2xl scale-[1.01]' : 'overflow-hidden'}`;
           
           if (count === 3 && i === 0) spanClass += " col-span-2";
           
           return (
             <div key={img.id} className={spanClass}>
               {isActive && (
-                <div className="absolute inset-0 border-2 border-black/20 pointer-events-none z-10 bg-white/5"></div>
+                <div className="absolute inset-0 border-2 border-black/10 pointer-events-none z-10 bg-white/5"></div>
               )}
               
               <img 
                 src={img.url} 
                 alt="Manga Panel" 
-                className="w-full h-full object-contain grayscale contrast-125 transition-transform duration-100 origin-center pointer-events-none" 
+                className="w-full h-full object-contain grayscale contrast-125 transition-transform duration-75 origin-center pointer-events-none" 
                 style={{
                   transform: `scale(${img.zoom}) translate(${img.offsetX}%, ${img.offsetY}%)`
                 }}
@@ -217,7 +217,7 @@ export default function App() {
             <div className="flex justify-between items-center border-b-4 border-black pb-2">
               <h2 className="text-xl font-black uppercase italic tracking-tighter">Manga Composer</h2>
               <div className="flex gap-2">
-                <button onClick={() => fileInputRef.current?.click()} className="bg-black text-white px-3 py-1 text-[10px] font-black uppercase hover:bg-gray-800">+ Nova Cena</button>
+                <button onClick={() => fileInputRef.current?.click()} className="bg-black text-white px-3 py-1 text-[10px] font-black uppercase hover:bg-gray-800 transition-colors">+ Adicionar</button>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" multiple />
               </div>
             </div>
@@ -225,11 +225,11 @@ export default function App() {
             {/* GESTÃO DE CENAS */}
             <div className="space-y-4">
               <h3 className="text-xs font-black uppercase border-b-2 border-gray-100 pb-1 flex items-center gap-2">
-                <i className="fa-solid fa-expand"></i> Ajuste de Enquadramento
+                <i className="fa-solid fa-arrows-up-down-left-right"></i> Ajustar Enquadramento
               </h3>
               <div className="grid grid-cols-1 gap-4">
                 {sourceImages.map((img, i) => (
-                  <div key={img.id} className={`border-2 p-3 bg-gray-50 transition-all ${activePanelIdx === i ? 'border-black bg-white shadow-[6px_6px_0_black] scale-[1.02]' : 'border-gray-200'}`}>
+                  <div key={img.id} className={`border-2 p-3 bg-gray-50 transition-all ${activePanelIdx === i ? 'border-black bg-white shadow-[6px_6px_0_black]' : 'border-gray-200'}`}>
                     <div className="flex gap-3 mb-2">
                       <div className="relative w-16 h-16 border-2 border-black flex-shrink-0 overflow-hidden bg-white">
                         <img src={img.url} className="w-full h-full object-contain grayscale" />
@@ -242,7 +242,7 @@ export default function App() {
                               onClick={() => setActivePanelIdx(activePanelIdx === i ? null : i)}
                               className={`text-[9px] px-2 py-0.5 border-2 border-black font-black uppercase transition-all ${activePanelIdx === i ? 'bg-black text-white shadow-none' : 'bg-white text-black hover:bg-gray-100'}`}
                             >
-                              {activePanelIdx === i ? 'Salvar' : 'Mover'}
+                              {activePanelIdx === i ? 'Confirmar' : 'Ajustar'}
                             </button>
                             <button onClick={() => removeImage(img.id)} className="text-red-600 hover:scale-110 transition-transform p-1">
                               <i className="fa-solid fa-trash-can text-xs"></i>
@@ -253,7 +253,7 @@ export default function App() {
                           <div className="space-y-4 pt-3 animate-in slide-in-from-top-1 duration-200 border-t border-gray-200 mt-2">
                             <div className="space-y-1">
                               <div className="flex justify-between text-[9px] font-black uppercase italic">
-                                <span>Zoom / Escala</span>
+                                <span>Zoom</span>
                                 <span>{img.zoom.toFixed(1)}x</span>
                               </div>
                               <input 
@@ -265,27 +265,27 @@ export default function App() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-1">
-                                <span className="text-[9px] font-black uppercase italic block text-center">Posição X</span>
+                                <span className="text-[9px] font-black uppercase italic block text-center">Desloc. X</span>
                                 <input 
-                                  type="range" min="-250" max="250" step="1" 
+                                  type="range" min="-300" max="300" step="1" 
                                   value={img.offsetX} 
                                   onChange={e => updateImageTransform(img.id, 'offsetX', parseInt(e.target.value))} 
                                   className="w-full h-1 accent-black"
                                 />
                               </div>
                               <div className="space-y-1">
-                                <span className="text-[9px] font-black uppercase italic block text-center">Posição Y</span>
+                                <span className="text-[9px] font-black uppercase italic block text-center">Desloc. Y</span>
                                 <input 
-                                  type="range" min="-250" max="250" step="1" 
+                                  type="range" min="-300" max="300" step="1" 
                                   value={img.offsetY} 
                                   onChange={e => updateImageTransform(img.id, 'offsetY', parseInt(e.target.value))} 
                                   className="w-full h-1 accent-black"
                                 />
                               </div>
                             </div>
-                            <div className="bg-yellow-50 p-2 text-[8px] font-bold border border-yellow-200 rounded text-yellow-900 leading-tight">
-                              <i className="fa-solid fa-magnifying-glass mr-1"></i>
-                              MODO LIVRE: A imagem agora respeita a proporção (contain). Use o zoom e os eixos para enquadrar. Durante o ajuste, o corte está desativado para você ver toda a imagem.
+                            <div className="bg-blue-50 p-2 text-[8px] font-bold border border-blue-200 rounded text-blue-900 leading-tight">
+                              <i className="fa-solid fa-eye mr-1"></i>
+                              SEM CORTES: A imagem agora é mantida inteira (contain). Durante o ajuste, habilitamos a visão livre para que você veja a imagem transbordando o quadro sem ser cortada.
                             </div>
                           </div>
                         )}
@@ -298,7 +298,7 @@ export default function App() {
                     onClick={() => fileInputRef.current?.click()}
                     className="h-16 border-2 border-dashed border-gray-300 flex items-center justify-center gap-2 cursor-pointer hover:border-black hover:text-black text-gray-400 transition-all font-black text-xs uppercase"
                   >
-                    <i className="fa-solid fa-plus-circle"></i> Novo Painel
+                    <i className="fa-solid fa-plus-circle"></i> Novo Quadro
                   </button>
                 )}
               </div>
@@ -357,12 +357,13 @@ export default function App() {
 
         {/* ÁREA DA FOLHA DE MANGÁ */}
         <div className="lg:col-span-8 flex flex-col items-center">
+          {/* O overflow-visible no container pai (página) quando em modo de ajuste é o segredo para não cortar a imagem */}
           <div className={`manga-panel bg-white p-8 min-h-[900px] w-full max-w-[750px] relative halftone-bg flex flex-col border-4 border-black transition-all ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
             <div ref={exportRef} className={`relative flex-grow bg-white w-full h-full flex flex-col ${activePanelIdx !== null ? 'overflow-visible' : 'overflow-hidden'}`}>
               {generation.isAnalyzing && (
                 <div className="absolute inset-0 z-[100] bg-white/95 flex flex-col items-center justify-center font-black uppercase italic animate-pulse">
                   <i className="fa-solid fa-wand-magic-sparkles text-3xl mb-4"></i>
-                  Organizando Mangá...
+                  Organizando Página...
                 </div>
               )}
               
@@ -417,10 +418,10 @@ export default function App() {
           
           {sourceImages.length > 0 && (
             <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-[750px]">
-              <button onClick={() => { setSourceImages([]); setActivePanelIdx(null); }} className="py-4 bg-white border-4 border-black font-black uppercase italic tracking-widest hover:bg-black hover:text-white transition-all shadow-[8px_8px_0px_#000]">Reiniciar Página</button>
+              <button onClick={() => { setSourceImages([]); setActivePanelIdx(null); }} className="py-4 bg-white border-4 border-black font-black uppercase italic tracking-widest hover:bg-black hover:text-white transition-all shadow-[8px_8px_0px_#000]">Limpar Página</button>
               <button onClick={handleDownload} disabled={isExporting} className="py-4 bg-black text-white border-4 border-black font-black uppercase italic tracking-widest shadow-[12px_12px_0px_#ccc] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center justify-center gap-2">
                 {isExporting ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-download"></i>}
-                Salvar Mangá
+                Exportar Arte
               </button>
             </div>
           )}
