@@ -6,6 +6,7 @@
 body {
   font-family: 'Noto Sans JP', sans-serif;
   @apply bg-[#000000] text-[#ffffff] selection:bg-white selection:text-black;
+  background-color: #000000;
 }
 
 .manga-font {
@@ -14,8 +15,9 @@ body {
 
 /* Painel Noir Ultra Sharp */
 .manga-panel {
-  border: 2px solid #18181b;
-  @apply bg-[#080808] transition-all;
+  border-width: 2px;
+  border-color: #1a1a1a;
+  @apply bg-[#050505] transition-all duration-300;
 }
 
 /* Sliders High Contrast */
@@ -29,22 +31,29 @@ input[type="range"]::-webkit-slider-runnable-track {
   width: 100%;
   height: 2px;
   background: #27272a;
+  border-radius: 0px;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  height: 16px;
-  width: 16px;
+  height: 18px;
+  width: 18px;
   border-radius: 0;
   background: #ffffff;
   cursor: pointer;
-  margin-top: -7px;
+  margin-top: -8px;
   border: 2px solid #000;
-  box-shadow: 0 0 15px rgba(255,255,255,0.1);
+  box-shadow: 0 0 20px rgba(255,255,255,0.05);
+  transition: transform 0.1s;
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(0.9);
+  background: #cccccc;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 3px;
+  width: 2px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -52,12 +61,12 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-zinc-700 hover:bg-white;
+  @apply bg-zinc-800 hover:bg-white;
 }
 
 .halftone-bg {
   background-image: radial-gradient(#111111 1px, transparent 0);
-  background-size: 12px 12px;
+  background-size: 14px 14px;
 }
 
 @keyframes glitch {
@@ -69,13 +78,22 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .animate-glitch-fast {
-  animation: glitch 0.15s infinite linear;
+  animation: glitch 0.1s infinite linear;
 }
 
 button {
-  @apply active:scale-90 transition-all duration-150 cursor-pointer;
+  @apply active:scale-95 transition-all duration-150;
 }
 
 textarea {
   @apply focus:ring-0;
+}
+
+/* Bordas de 2px ou 4px para visual de Nanquim */
+.border-nanquim {
+  border: 4px solid #000000;
+}
+
+.border-nanquim-thin {
+  border: 2px solid #000000;
 }
